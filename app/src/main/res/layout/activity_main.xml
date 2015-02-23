@@ -1,0 +1,12 @@
+<GridView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/gridview"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:columnWidth="auto_fit"
+    android:numColumns="8"
+    android:numRows="8"
+    android:verticalSpacing="2dp"
+    android:horizontalSpacing="2dp"
+    android:stretchMode="columnWidth"
+    android:gravity="center"
+/>
