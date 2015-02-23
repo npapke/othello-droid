@@ -1,142 +1,103 @@
 /*
- 
-  $Id: ComputerPlayer.java,v 1.1 2002/10/30 19:59:32 npapke Exp $
-  
-  eOthello, an implementation of the Othello board game using
-  a JSP front end with an EJB backend.
-
-  Copyright 2001 Norbert Papke (npapke@acm.org). All Rights Reserved.
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-  
-*/
-
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
 
 package ca.provenpath.othello.game;
 
-import java.util.Iterator;
 
-/** This class implements the computer player.
- * @author Norbert Papke
- * @version $Revision: 1.1 $
+import android.util.Log;
+
+/**
+ * A computer player.  Automatically determines the optimal move for
+ * a given board based on a strategy.  The strategy is implemented
+ * separately as it is independent from the search algorithm.
+ * 
+ * @author npapke
  */
 public class ComputerPlayer extends Player
 {
-    Strategy strategy;
-    int max_depth;
-    
-    
-/** Creates new ComputerPlayer
- * @param color the color of the computer player's game pieces
- * @param expertise the level of difficulty of the computer player's strategy
- */
-    public ComputerPlayer( Cell color, int expertise )
-    {
-        super( color );
-        
-        // TODO: A factory class may be a bit cleaner for this ...
-        switch( expertise )
-        {
-            case Util.EXPERT:
-                strategy = new ExpertStrategy(color);
-                break;
-                
-            case Util.INTERMEDIATE:
-                strategy = new IntermediateStrategy(color);
-                break;
-                
-            case Util.BEGINNER:
-            default:
-                strategy = new BeginnerStrategy(color);
-                break;
-        }
-        
-        max_depth = strategy.getRecursionDepth();
-    }
-    
-/** Make a move on the specified game board.
- * @param board the board to make the move on
- * @throws OthelloException if a game error (such as no possible valid move) occurs
- */    
-    public void makeMove( Board board ) throws OthelloException
-    {
-        if (board.hasValidMove(color))
-        {
-            Move move = determineBestMove( board );
-            board.makeMove( move );
-        }
-        else
-        {
-            throw new OthelloException( "No valid move" );
-        }
-    }
-    
-    
-    private Position bestPos; // the best possible move
-    
-    private Move determineBestMove( Board board ) throws OthelloException
-    {
-        Position dummyPos = new Position( 0, 0 );
-        
-        int result = minimaxAB( board, color, 0, (int)Integer.MIN_VALUE, (int)Integer.MAX_VALUE);
-        
-        return new Move( color, bestPos );
-    }
+    public final static String TAG = Player.class.getName();
 
-
-    /*
-     * Build game tree utilizing alpha-beta pruning
+    /**
+     * Best position for current board.
+     * <br/>
+     * TODO this should be handled as an output/return value of the minimaxAB() method
      */
-    private int minimaxAB
-    (
-    Board board,
-    Cell player,
-    int depth,
-    int alpha,
-    int beta
-    ) throws OthelloException
+    Position bestPos;
+
+
+    /**
+     * Make a move on the board.
+     * @param board the board to move on
+     */
+    @Override
+    public void makeMove( Board board )
     {
-        if (depth >= max_depth)
+        Assert.notNull( color );
+        Assert.notNull( strategy );
+        Assert.isTrue( maxDepth > 0 );
+        Assert.isTrue( board.hasValidMove( color ) );
+
+        bestPos = null;
+
+        int result = minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE );
+
+        Assert.notNull( bestPos );
+
+        Log.i( TAG, "makeMove: " + bestPos + ", value: " + result );
+
+        board.makeMove( new Move( color, bestPos ) );
+    }
+
+
+    /**
+     * Recursively build game tree.  Find the move that leads to the
+     * strongest board for the player.  Utilize alpha-beta pruning
+     * to narrow search.
+     * 
+     * @param board the board to evaluate
+     * @param player the player who's move it is
+     * @param depth the current recursion depth (in half-moves)
+     * @param alpha the alpha maximum
+     * @param beta the beta maximum
+     * @return the value of board
+     */
+    private int minimaxAB(
+        Board board,
+        BoardValue player,
+        int depth,
+        int alpha,
+        int beta )
+    {
+        if (depth >= maxDepth)
         {
-            return strategy.determineBoardValue( board );
+            return strategy.determineBoardValue( player, board );
         }
-        
+
         boolean validMoveSeen = false;
-        
-        Iterator positionIterator = board.iterator();
-        
-        while (positionIterator.hasNext() && (alpha <= beta))
+
+        for (Position pos : board)
         {
-            Position pos = (Position) positionIterator.next();
-            Move m = new Move( player, pos);
-            
+            Move m = new Move( player, pos );
+
             if (board.isValidMove( m ))
             {
                 Board copyOfBoard = (Board) board.clone();
-                
+
                 copyOfBoard.makeMove( m );
-                
+
                 int result = minimaxAB( copyOfBoard,
-                Game.otherPlayer( player ), depth + 1, alpha, beta );
+                    player.otherPlayer(), depth + 1, alpha, beta );
                 
+                Log.d( TAG, "minimaxAB: " + depth + " " + player + " " + pos + " " + result );
+
                 if (player == color)
                 {
-                    if (result > alpha)
+                    if (-result > alpha)
                     {
-                        alpha = result;
-                        
+                        alpha = -result;
+
                         if (depth == 0)
                         {
                             bestPos = pos;
@@ -150,26 +111,31 @@ public class ComputerPlayer extends Player
                         beta = result;
                     }
                 }
-                
+
                 validMoveSeen = true;
+                
+                if (alpha > beta)
+                {
+                    break;
+                }
             }
         }
-        
+
         if (!validMoveSeen)
         {
             // player has to pass ...
 
-	    if (board.hasValidMove( Game.otherPlayer( player )))
-	    {
-                 return minimaxAB( board, Game.otherPlayer( player ), depth, alpha, beta );
-	    }
-	    else
-	    {
+            if (board.hasValidMove( player.otherPlayer() ))
+            {
+                return minimaxAB( board, player.otherPlayer(), depth, alpha, beta );
+            }
+            else
+            {
                 // neither player has a valid move.  return the score
-	         return strategy.determineFinalScore( board );
-	    }
+                return strategy.determineFinalScore( player, board );
+            }
         }
-        
+
         if (player == color)
         {
             return alpha;
@@ -179,5 +145,59 @@ public class ComputerPlayer extends Player
             return beta;
         }
     }
-    
+
+
+    //
+    // ---------------- Bean Pattern ---------------
+    //
+    protected int maxDepth = -1;
+
+
+    /**
+     * Get the value of maxDepth
+     *
+     * @return the value of maxDepth
+     */
+    public int getMaxDepth()
+    {
+        return maxDepth;
+    }
+
+
+    /**
+     * Set the value of maxDepth
+     *
+     * @param maxDepth new value of maxDepth
+     */
+    public void setMaxDepth( int maxDepth )
+    {
+        this.maxDepth = maxDepth;
+    }
+
+
+    protected Strategy strategy;
+
+
+    /**
+     * Get the value of strategy
+     *
+     * @return the value of strategy
+     */
+    public Strategy getStrategy()
+    {
+        return strategy;
+    }
+
+
+    /**
+     * Set the value of strategy
+     *
+     * @param strategy new value of strategy
+     */
+    public void setStrategy( Strategy strategy )
+    {
+        this.strategy = strategy;
+    }
+
+
 }
