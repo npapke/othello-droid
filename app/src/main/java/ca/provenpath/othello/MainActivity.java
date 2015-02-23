@@ -9,6 +9,8 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.Toast;
 
+import ca.provenpath.othello.game.GameExecutor;
+
 
 public class MainActivity extends ActionBarActivity
 {
@@ -19,8 +21,11 @@ public class MainActivity extends ActionBarActivity
         super.onCreate( savedInstanceState );
         setContentView( R.layout.activity_main );
 
+        mExecutor = new GameExecutor();
+        mExecutor.newGame();
+
         GridView gridview = (GridView) findViewById( R.id.gridview );
-        gridview.setAdapter( new CellAdapter( this ) );
+        gridview.setAdapter( new BoardAdapter( this, mExecutor.getBoard() ) );
 
         gridview.setOnItemClickListener( new AdapterView.OnItemClickListener()
         {
@@ -56,4 +61,6 @@ public class MainActivity extends ActionBarActivity
 
         return super.onOptionsItemSelected( item );
     }
+
+    private GameExecutor mExecutor;
 }
