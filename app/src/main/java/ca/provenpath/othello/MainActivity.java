@@ -20,7 +20,7 @@ public class MainActivity extends ActionBarActivity
         setContentView( R.layout.activity_main );
 
         GridView gridview = (GridView) findViewById( R.id.gridview );
-        gridview.setAdapter( new ImageAdapter( this ) );
+        gridview.setAdapter( new CellAdapter( this ) );
 
         gridview.setOnItemClickListener( new AdapterView.OnItemClickListener()
         {
