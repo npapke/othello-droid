@@ -31,7 +31,7 @@ public class Position
      */
     public Position( int x, int y )
     {
-        setLinear( getLinear( x, y ) );
+        setLinear( makeLinear( x, y ) );
     }
 
 
@@ -94,7 +94,7 @@ public class Position
      * @param y y-ordinate
      * @return linear position
      */
-    public static int getLinear( int x, int y )
+    public static int makeLinear( int x, int y )
     {
         return x * Board.BOARD_SIZE + y;
     }

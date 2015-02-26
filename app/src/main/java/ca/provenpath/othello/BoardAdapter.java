@@ -47,8 +47,8 @@ public class BoardAdapter extends BaseAdapter
         {  // if it's not recycled, initialize some attributes
             imageView = new ImageView( mContext );
             imageView.setLayoutParams( new GridView.LayoutParams( 85, 85 ) );
-            imageView.setScaleType( ImageView.ScaleType.CENTER_CROP );
-            imageView.setPadding( 8, 8, 8, 8 );
+            imageView.setScaleType( ImageView.ScaleType.FIT_XY );
+            imageView.setPadding( 1, 1, 1, 1 );
         } else
         {
             imageView = (ImageView) convertView;

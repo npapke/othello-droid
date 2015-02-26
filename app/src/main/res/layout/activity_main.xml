@@ -3,8 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:numColumns="8"
-    android:verticalSpacing="2dp"
-    android:horizontalSpacing="2dp"
-    android:stretchMode="columnWidth"
+    android:verticalSpacing="0dp"
+    android:horizontalSpacing="0dp"
+    android:stretchMode="spacingWidthUniform"
     android:gravity="center"
 />

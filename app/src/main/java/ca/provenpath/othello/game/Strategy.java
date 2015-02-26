@@ -31,7 +31,7 @@ public class Strategy
     };
 
 
-    /** Assign a numberic value to the board utilizing a weighted cell matrix.
+    /** Assign a numeric value to the board utilizing a weighted cell matrix.
      * @param player the perspective of the player to evaluate the board from
      * @param board the board to evaluate
      * @return the value of the board

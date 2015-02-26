@@ -59,10 +59,10 @@ public class Board implements Cloneable, Iterable<Position>
             board[i] = EMPTY;
         }
 
-        board[Position.getLinear( 3, 3 )] = WHITE;
-        board[Position.getLinear( 4, 4 )] = WHITE;
-        board[Position.getLinear( 3, 4 )] = BLACK;
-        board[Position.getLinear( 4, 3 )] = BLACK;
+        board[Position.makeLinear( 3, 3 )] = WHITE;
+        board[Position.makeLinear( 4, 4 )] = WHITE;
+        board[Position.makeLinear( 3, 4 )] = BLACK;
+        board[Position.makeLinear( 4, 3 )] = BLACK;
     }
 
 

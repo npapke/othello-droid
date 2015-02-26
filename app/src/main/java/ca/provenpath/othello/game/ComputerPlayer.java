@@ -26,6 +26,11 @@ public class ComputerPlayer extends Player
      */
     Position bestPos;
 
+    public ComputerPlayer( BoardValue color )
+    {
+        setColor( color );
+    }
+
 
     /**
      * Make a move on the board.
@@ -150,7 +155,7 @@ public class ComputerPlayer extends Player
     //
     // ---------------- Bean Pattern ---------------
     //
-    protected int maxDepth = -1;
+    protected int maxDepth = 3;
 
 
     /**
@@ -175,7 +180,7 @@ public class ComputerPlayer extends Player
     }
 
 
-    protected Strategy strategy;
+    protected Strategy strategy = new Strategy();
 
 
     /**

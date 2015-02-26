@@ -9,7 +9,10 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.Toast;
 
+import ca.provenpath.othello.game.BoardValue;
+import ca.provenpath.othello.game.ComputerPlayer;
 import ca.provenpath.othello.game.GameExecutor;
+import ca.provenpath.othello.game.HumanPlayer;
 
 
 public class MainActivity extends ActionBarActivity
@@ -21,7 +24,12 @@ public class MainActivity extends ActionBarActivity
         super.onCreate( savedInstanceState );
         setContentView( R.layout.activity_main );
 
+        final HumanPlayer human = new HumanPlayer( BoardValue.BLACK);
+        ComputerPlayer computer = new ComputerPlayer( BoardValue.WHITE);
+
         mExecutor = new GameExecutor();
+        mExecutor.setPlayer( 0, human );
+        mExecutor.setPlayer( 1, computer );
         mExecutor.newGame();
 
         GridView gridview = (GridView) findViewById( R.id.gridview );
@@ -32,6 +40,7 @@ public class MainActivity extends ActionBarActivity
             public void onItemClick( AdapterView<?> parent, View v, int position, long id )
             {
                 Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
+                human.attemptMove( position );
             }
         } );
     }
