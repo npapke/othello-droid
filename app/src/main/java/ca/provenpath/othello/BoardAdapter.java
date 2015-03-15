@@ -15,10 +15,9 @@ import ca.provenpath.othello.game.BoardValue;
  */
 public class BoardAdapter extends BaseAdapter
 {
-    public BoardAdapter( Context context, Board board )
+    public BoardAdapter( Context context )
     {
         mContext = context;
-        mBoard = board;
     }
 
     @Override
@@ -49,22 +48,25 @@ public class BoardAdapter extends BaseAdapter
             imageView.setLayoutParams( new GridView.LayoutParams( 85, 85 ) );
             imageView.setScaleType( ImageView.ScaleType.FIT_XY );
             imageView.setPadding( 1, 1, 1, 1 );
-        } else
+        }
+        else
         {
             imageView = (ImageView) convertView;
         }
 
         imageView.setImageResource( resourceForCell( mBoard.getLvalue( position ) ) );
-        mBoardImages[ position ] = imageView;
+        mBoardImages[position] = imageView;
         return imageView;
     }
 
-    public void redraw()
+    public void redraw( Board newBoard )
     {
+        Board oldBoard = mBoard;
+        mBoard = (newBoard == null) ? new Board() : (Board) newBoard.clone();
+
         for (int i = 0; i < Board.BOARD_LSIZE; ++i)
         {
-            if (mBoardImages[i] != null)
-                mBoardImages[ i ].setImageResource( resourceForCell( mBoard.getLvalue( i ) ) );
+            getView( i, mBoardImages[ i ], null );
         }
     }
 
@@ -87,6 +89,6 @@ public class BoardAdapter extends BaseAdapter
     }
 
     private Context mContext;
-    private Board mBoard;
-    private ImageView[] mBoardImages = new ImageView[ Board.BOARD_LSIZE ];
+    private Board mBoard = new Board();
+    private ImageView[] mBoardImages = new ImageView[Board.BOARD_LSIZE];
 }

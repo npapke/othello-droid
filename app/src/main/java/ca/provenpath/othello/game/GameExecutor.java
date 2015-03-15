@@ -33,6 +33,17 @@ public class GameExecutor extends Observable
         notifyObservers();
     }
 
+    public void endGame()
+    {
+        player[0].interruptMove();
+        player[1].interruptMove();
+
+        state = GameState.GAME_OVER;
+
+        setChanged();
+        notifyObservers();
+    }
+
 
     /**
      * Execute one turn on the board.

@@ -19,6 +19,8 @@ public abstract class Player
      */
     public abstract void makeMove( Board board );
 
+    public abstract void interruptMove();
+
     //
     // ------------------- Bean Pattern ----------------
     //

@@ -44,6 +44,7 @@ public class ComputerPlayer extends Player
         Assert.isTrue( maxDepth > 0 );
         Assert.isTrue( board.hasValidMove( color ) );
 
+        isInterrupted = false;
         bestPos = null;
 
         int result = minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE );
@@ -53,6 +54,12 @@ public class ComputerPlayer extends Player
         Log.i( TAG, "makeMove: " + bestPos + ", value: " + result );
 
         board.makeMove( new Move( color, bestPos ) );
+    }
+
+    @Override
+    public void interruptMove()
+    {
+        isInterrupted = true;
     }
 
 
@@ -75,7 +82,7 @@ public class ComputerPlayer extends Player
         int alpha,
         int beta )
     {
-        if (depth >= maxDepth)
+        if (depth >= maxDepth || isInterrupted)
         {
             return strategy.determineBoardValue( player, board );
         }
@@ -205,4 +212,5 @@ public class ComputerPlayer extends Player
     }
 
 
+    private volatile boolean isInterrupted = false;
 }

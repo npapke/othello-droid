@@ -1,8 +1,10 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:layout_height="fill_parent"
+    android:layout_width="fill_parent"
+    style="@style/Base.V14.Theme.AppCompat"
+    >
 
     <TextView
         android:layout_width="match_parent"
@@ -40,14 +42,21 @@
 
     <GridView
         android:id="@+id/gridview"
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:gravity="center"
         android:horizontalSpacing="0dp"
         android:numColumns="8"
         android:stretchMode="spacingWidthUniform"
         android:verticalSpacing="0dp"
         />
+
+    <Button
+        android:id="@+id/newgame"
+        android:layout_width="wrap_content"
+        android:layout_height="79dp"
+        android:text="@string/newgame"
+        android:layout_gravity="right"
+        android:enabled="true"/>
 </LinearLayout>
 

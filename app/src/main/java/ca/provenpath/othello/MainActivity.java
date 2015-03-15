@@ -1,6 +1,5 @@
 package ca.provenpath.othello;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,7 +9,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,7 +25,13 @@ import ca.provenpath.othello.game.observer.GameState;
 
 public class MainActivity extends ActionBarActivity
 {
-    private final static int MSG_REDRAW = 341;
+    /*
+     * ====================================================================
+     *
+     * Life cycle methods
+     *
+     * --------------------------------------------------------------------
+     */
 
     @Override
     protected void onCreate( Bundle savedInstanceState )
@@ -35,15 +39,7 @@ public class MainActivity extends ActionBarActivity
         super.onCreate( savedInstanceState );
         setContentView( R.layout.activity_main );
 
-        final HumanPlayer human = new HumanPlayer( BoardValue.BLACK );
-        ComputerPlayer computer = new ComputerPlayer( BoardValue.WHITE );
-
-        mExecutor = new GameExecutor();
-        mExecutor.setPlayer( 0, human );
-        mExecutor.setPlayer( 1, computer );
-        mExecutor.newGame();
-
-        mBoardAdaptor = new BoardAdapter( this, mExecutor.getBoard() );
+        mBoardAdaptor = new BoardAdapter( this );
         GridView gridview = (GridView) findViewById( R.id.gridview );
         gridview.setAdapter( mBoardAdaptor );
 
@@ -52,70 +48,51 @@ public class MainActivity extends ActionBarActivity
             public void onItemClick( AdapterView<?> parent, View v, int position, long id )
             {
                 Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
-                human.attemptMove( position );
+                attemptMove( position );
+            }
+        } );
+
+        findViewById( R.id.newgame ).setOnClickListener( new View.OnClickListener()
+        {
+            @Override
+            public void onClick( View v )
+            {
+                newGame();
             }
         } );
 
         /*
          * Process requests on the UI thread.
          */
-       mHandler = new Handler( Looper.getMainLooper() )
-       {
-           @Override
-           public void handleMessage( Message msg )
-           {
-               switch (msg.what)
-               {
-                   case MSG_REDRAW:
-                       updateDisplay();
-                       break;
-
-                   default:
-                       super.handleMessage( msg );
-                       break;
-               }
-           }
-       };
-
-        mExecutor.addObserver( new Observer()
+        mHandler = new Handler( Looper.getMainLooper() )
         {
             @Override
-            public void update( Observable observable, Object data )
+            public void handleMessage( Message msg )
             {
-                // Send redraw request to UI thread.
-                mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
-            }
-        } );
-
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                while (mExecutor.getState() != GameState.GAME_OVER)
+                switch (msg.what)
                 {
-                    mExecutor.executeOneTurn();
+                    case MSG_REDRAW:
+                        updateDisplay();
+                        break;
+
+                    default:
+                        super.handleMessage( msg );
+                        break;
                 }
             }
-        }.start();
+        };
 
         mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
     }
 
 
-    private void updateDisplay()
-    {
-        TextView moveNumber = (TextView) findViewById( R.id.move_number );
-        TextView humanScore = (TextView) findViewById( R.id.human_score );
-        TextView computerScore = (TextView) findViewById( R.id.computer_score );
-
-        moveNumber.setText( Integer.toString( mExecutor.getMoveNumber() ) );
-        humanScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.BLACK ) ) );
-        computerScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.WHITE ) ) );
-
-        mBoardAdaptor.redraw();
-    }
-
+    /*
+     * ====================================================================
+     *
+     * Option menu methods
+     *
+     * --------------------------------------------------------------------
+     */
 
     @Override
     public boolean onCreateOptionsMenu( Menu menu )
@@ -141,6 +118,93 @@ public class MainActivity extends ActionBarActivity
 
         return super.onOptionsItemSelected( item );
     }
+
+
+    /*
+     * ====================================================================
+     *
+     * Manage display
+     *
+     * --------------------------------------------------------------------
+     */
+
+    private void newGame()
+    {
+        if (mExecutor != null)
+        {
+            mExecutor.endGame();
+        }
+
+        mExecutor = new GameExecutor();
+        mExecutor.setPlayer( mHumanPlayer, new HumanPlayer( BoardValue.BLACK ) );
+        mExecutor.setPlayer( mComputerPlayer, new ComputerPlayer( BoardValue.WHITE ) );
+
+        mExecutor.addObserver( new Observer()
+        {
+            @Override
+            public void update( Observable observable, Object data )
+            {
+                // Send redraw request to UI thread.
+                mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
+            }
+        } );
+
+        mExecutor.newGame();
+
+        // Run the game on a separate thread
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                while (mExecutor.getState() != GameState.GAME_OVER)
+                {
+                    mExecutor.executeOneTurn();
+                }
+            }
+        }.start();
+
+    }
+
+    private void updateDisplay()
+    {
+        TextView moveNumber = (TextView) findViewById( R.id.move_number );
+        TextView humanScore = (TextView) findViewById( R.id.human_score );
+        TextView computerScore = (TextView) findViewById( R.id.computer_score );
+
+        if (mExecutor == null)
+        {
+            moveNumber.setText( "" );
+            humanScore.setText( "" );
+            computerScore.setText( "" );
+
+            mBoardAdaptor.redraw( null );
+        }
+        else
+        {
+            moveNumber.setText( Integer.toString( mExecutor.getMoveNumber() ) );
+            humanScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.BLACK ) ) );
+            computerScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.WHITE ) ) );
+
+            mBoardAdaptor.redraw( mExecutor.getBoard() );
+        }
+    }
+
+    private void attemptMove( int position )
+    {
+        if (mExecutor != null)
+        {
+            HumanPlayer human = (HumanPlayer) mExecutor.getPlayer( mHumanPlayer );
+            if (human != null)
+                human.attemptMove( position );
+        }
+    }
+
+
+    private final static int MSG_REDRAW = 341;
+
+    private int mHumanPlayer = 0;
+    private int mComputerPlayer = 1;
 
     private Handler mHandler;
     private GameExecutor mExecutor;

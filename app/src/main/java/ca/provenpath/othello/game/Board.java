@@ -89,7 +89,7 @@ public class Board implements Cloneable, Iterable<Position>
      * @return copy of board
      */
     @Override
-    protected Object clone()
+    public Object clone()
     {
         return new Board( this );
     }

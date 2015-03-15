@@ -24,35 +24,46 @@ public class HumanPlayer extends Player
 
         for (;;)
         {
-            Move move = waitForMove();
-            if (board.isValidMove( move ))
-            {
-                Log.d( TAG, "Applying move " + move );
+            HumanMove humanMove = waitForMove();
+            Move boardMove = humanMove.getMove();
+            if (boardMove == null)
+                return;
 
-                board.makeMove( move );
+            if (board.isValidMove( boardMove ))
+            {
+                Log.d( TAG, "Applying move " + boardMove );
+
+                board.makeMove( boardMove );
                 break;
             }
             else
             {
-                Log.d( TAG, "Invalid move " + move );
+                Log.d( TAG, "Invalid move " + boardMove );
             }
         }
+    }
+
+    @Override
+    public void interruptMove()
+    {
+        // Signal the end
+        nextMove.offer( new HumanMove() );
     }
 
     public void attemptMove( int lvalue )
     {
         Log.d( TAG, "Move to " + lvalue );
 
-        nextMove.offer( new Move( getColor(), new Position( lvalue ) ) );
+        nextMove.offer( new HumanMove( lvalue ) );
     }
 
-    private Move waitForMove()
+    private HumanMove waitForMove()
     {
         for (;;)
         {
             try
             {
-                return nextMove.take();
+                return nextMove.take( );
             }
             catch (InterruptedException e)
             {
@@ -60,5 +71,28 @@ public class HumanPlayer extends Player
         }
     }
 
-    BlockingQueue<Move> nextMove = new ArrayBlockingQueue< Move >( 1 );
+    /**
+     * Just an apparatus to signal "no move"
+     */
+    private class HumanMove
+    {
+        public HumanMove()
+        {
+            mMove = null;
+        }
+
+        public HumanMove( int lvalue )
+        {
+            mMove = new Move( getColor(), new Position( lvalue ) );
+        }
+
+        public Move getMove()
+        {
+            return mMove;
+        }
+
+        private Move mMove;
+    }
+
+    private BlockingQueue<HumanMove> nextMove = new ArrayBlockingQueue< HumanMove >( 1 );
 }
