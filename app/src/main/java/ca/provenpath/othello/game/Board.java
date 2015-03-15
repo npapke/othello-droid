@@ -28,6 +28,11 @@ public class Board implements Cloneable, Iterable<Position>
     public static final int BOARD_SIZE = 8;
 
     /**
+     * Linear size of the board
+     */
+    public static final int BOARD_LSIZE = BOARD_SIZE * BOARD_SIZE;
+
+    /**
      * The board cells.  A linear array is more convenient
      * (and efficient) than a grid.
      */

@@ -55,7 +55,16 @@ public class BoardAdapter extends BaseAdapter
         }
 
         imageView.setImageResource( resourceForCell( mBoard.getLvalue( position ) ) );
+        mBoardImages[ position ] = imageView;
         return imageView;
+    }
+
+    public void redraw()
+    {
+        for (int i = 0; i < Board.BOARD_LSIZE; ++i)
+        {
+            mBoardImages[ i ].setImageResource( resourceForCell( mBoard.getLvalue( i ) ) );
+        }
     }
 
     private int resourceForCell( BoardValue bv )
@@ -78,4 +87,5 @@ public class BoardAdapter extends BaseAdapter
 
     private Context mContext;
     private Board mBoard;
+    private ImageView[] mBoardImages = new ImageView[ Board.BOARD_LSIZE ];
 }
