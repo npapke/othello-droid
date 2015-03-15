@@ -224,7 +224,7 @@ public class Board implements Cloneable, Iterable<Position>
      */
     public void makeMove( Move m )
     {
-        Log.d( TAG, "makeMove: " + m );
+        // Log.v( TAG, "makeMove: " + m );
 
         Assert.isTrue( isValidMove( m ), "Invalid move" );
 
@@ -371,8 +371,8 @@ public class Board implements Cloneable, Iterable<Position>
      */
     public BoardValue getLvalue( int linear )
     {
-        Log.d( TAG, "getLvalue: [" + linear + "] = " +
-            ((board[linear] == null) ? "null" : board[linear].toString() ) );
+        // Log.d( TAG, "getLvalue: [" + linear + "] = " +
+        //     ((board[linear] == null) ? "null" : board[linear].toString() ) );
 
         return board[linear];
     }

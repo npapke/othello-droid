@@ -1,10 +1,53 @@
-<GridView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/gridview"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:numColumns="8"
-    android:verticalSpacing="0dp"
-    android:horizontalSpacing="0dp"
-    android:stretchMode="spacingWidthUniform"
-    android:gravity="center"
-/>
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Move"/>
+
+    <TextView
+        android:id="@+id/move_number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Move"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Human"/>
+
+    <TextView
+        android:id="@+id/human_score"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Human"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Computer"/>
+
+    <TextView
+        android:id="@+id/computer_score"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Computer"/>
+
+
+    <GridView
+        android:id="@+id/gridview"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:horizontalSpacing="0dp"
+        android:numColumns="8"
+        android:stretchMode="spacingWidthUniform"
+        android:verticalSpacing="0dp"
+        />
+</LinearLayout>
+

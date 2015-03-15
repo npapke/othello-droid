@@ -10,7 +10,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.GridView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Observable;
@@ -65,7 +67,7 @@ public class MainActivity extends ActionBarActivity
                switch (msg.what)
                {
                    case MSG_REDRAW:
-                       mBoardAdaptor.redraw();
+                       updateDisplay();
                        break;
 
                    default:
@@ -80,7 +82,8 @@ public class MainActivity extends ActionBarActivity
             @Override
             public void update( Observable observable, Object data )
             {
-                updateDisplay();
+                // Send redraw request to UI thread.
+                mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
             }
         } );
 
@@ -96,13 +99,21 @@ public class MainActivity extends ActionBarActivity
             }
         }.start();
 
+        mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
     }
 
 
     private void updateDisplay()
     {
-        Message redrawMsg = mHandler.obtainMessage( MSG_REDRAW );
-        redrawMsg.sendToTarget();
+        TextView moveNumber = (TextView) findViewById( R.id.move_number );
+        TextView humanScore = (TextView) findViewById( R.id.human_score );
+        TextView computerScore = (TextView) findViewById( R.id.computer_score );
+
+        moveNumber.setText( Integer.toString( mExecutor.getMoveNumber() ) );
+        humanScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.BLACK ) ) );
+        computerScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.WHITE ) ) );
+
+        mBoardAdaptor.redraw();
     }
 
 

@@ -95,7 +95,7 @@ public class ComputerPlayer extends Player
                 int result = minimaxAB( copyOfBoard,
                     player.otherPlayer(), depth + 1, alpha, beta );
                 
-                Log.d( TAG, "minimaxAB: " + depth + " " + player + " " + pos + " " + result );
+                // Log.d( TAG, "minimaxAB: " + depth + " " + player + " " + pos + " " + result );
 
                 if (player == color)
                 {

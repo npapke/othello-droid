@@ -63,7 +63,8 @@ public class BoardAdapter extends BaseAdapter
     {
         for (int i = 0; i < Board.BOARD_LSIZE; ++i)
         {
-            mBoardImages[ i ].setImageResource( resourceForCell( mBoard.getLvalue( i ) ) );
+            if (mBoardImages[i] != null)
+                mBoardImages[ i ].setImageResource( resourceForCell( mBoard.getLvalue( i ) ) );
         }
     }
 
