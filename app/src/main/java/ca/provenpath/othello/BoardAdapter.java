@@ -1,6 +1,7 @@
 package ca.provenpath.othello;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -15,6 +16,8 @@ import ca.provenpath.othello.game.BoardValue;
  */
 public class BoardAdapter extends BaseAdapter
 {
+    public final static String TAG = BoardAdapter.class.getName();
+
     public BoardAdapter( Context context )
     {
         mContext = context;
@@ -23,7 +26,7 @@ public class BoardAdapter extends BaseAdapter
     @Override
     public int getCount()
     {
-        return Board.BOARD_SIZE * Board.BOARD_SIZE;
+        return mBoardImages.length;
     }
 
     @Override
@@ -41,13 +44,15 @@ public class BoardAdapter extends BaseAdapter
     @Override
     public View getView( int position, View convertView, ViewGroup parent )
     {
+        if (position == 0) Log.w( TAG, "Drawing position 0");
+
         ImageView imageView;
         if (convertView == null)
         {  // if it's not recycled, initialize some attributes
             imageView = new ImageView( mContext );
-            imageView.setLayoutParams( new GridView.LayoutParams( 85, 85 ) );
+            imageView.setLayoutParams( new GridView.LayoutParams( 120, 120 ) );
             imageView.setScaleType( ImageView.ScaleType.FIT_XY );
-            imageView.setPadding( 1, 1, 1, 1 );
+            imageView.setPadding( 0, 0, 0, 0 );
         }
         else
         {
@@ -66,7 +71,8 @@ public class BoardAdapter extends BaseAdapter
 
         for (int i = 0; i < Board.BOARD_LSIZE; ++i)
         {
-            getView( i, mBoardImages[ i ], null );
+            if (oldBoard.getLvalue( i ) != mBoard.getLvalue( i ))
+                getView( i, mBoardImages[ i ], null );
         }
     }
 

@@ -31,7 +31,7 @@ public class HumanPlayer extends Player
 
             if (board.isValidMove( boardMove ))
             {
-                Log.d( TAG, "Applying move " + boardMove );
+                Log.i( TAG, "Applying move " + boardMove );
 
                 board.makeMove( boardMove );
                 break;

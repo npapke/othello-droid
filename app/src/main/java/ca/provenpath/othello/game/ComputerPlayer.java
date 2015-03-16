@@ -17,7 +17,7 @@ import android.util.Log;
  */
 public class ComputerPlayer extends Player
 {
-    public final static String TAG = Player.class.getName();
+    public final static String TAG = ComputerPlayer.class.getName();
 
     /**
      * Best position for current board.
@@ -162,7 +162,7 @@ public class ComputerPlayer extends Player
     //
     // ---------------- Bean Pattern ---------------
     //
-    protected int maxDepth = 3;
+    protected int maxDepth = 5;
 
 
     /**

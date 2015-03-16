@@ -26,7 +26,7 @@ public class GameExecutor extends Observable
         Assert.notNull( player[1] );
 
         board = new Board();
-        moveNumber = 0;
+        moveNumber = 1;
         state = GameState.TURN_PLAYER_0;
 
         setChanged();
