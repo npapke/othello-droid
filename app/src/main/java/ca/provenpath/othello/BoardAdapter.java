@@ -69,7 +69,11 @@ public class BoardAdapter extends BaseAdapter
         {
             // if it's not recycled, initialize some attributes
             imageView = new ImageView( mContext );
-            imageView.setLayoutParams( new GridView.LayoutParams( 120, 120 ) );
+
+            // TODO determine size dynamically
+            int size = 120; // Math.min( parent.getHeight(), parent.getWidth() ) / 8;
+
+            imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
             imageView.setScaleType( ImageView.ScaleType.FIT_XY );
             imageView.setPadding( 0, 0, 0, 0 );
         }
@@ -81,7 +85,11 @@ public class BoardAdapter extends BaseAdapter
         imageView.setImageResource( resourceForCell( mBoard.getLvalue( position ) ) );
         mBoardImages[position] = imageView;
 
-        if ( ! mBoard.getLvalue( position ).equals( mOldBoard.getLvalue( position ) ) )
+        BoardValue bv = mBoard.getLvalue( position );
+        boolean isAnimated = ! bv.equals( mOldBoard.getLvalue( position ) )
+                && ((bv == BoardValue.BLACK) || (bv == BoardValue.WHITE));
+
+        if ( isAnimated )
         {
             // "Expand" animation for changed tiles
             ObjectAnimator animatorX = ObjectAnimator.ofFloat( imageView, "scaleX", 0f, 1f );

@@ -16,6 +16,7 @@ import android.widget.Toast;
 import java.util.Observable;
 import java.util.Observer;
 
+import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
 import ca.provenpath.othello.game.ComputerPlayer;
 import ca.provenpath.othello.game.GameExecutor;
@@ -73,6 +74,10 @@ public class MainActivity extends ActionBarActivity
                 {
                     case MSG_REDRAW:
                         updateDisplay();
+                        break;
+
+                    case MSG_SHOWVALID:
+                        showValidMoves();
                         break;
 
                     default:
@@ -157,6 +162,8 @@ public class MainActivity extends ActionBarActivity
             @Override
             public void run()
             {
+                mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
+
                 while (mExecutor.getState() != GameState.GAME_OVER)
                 {
                     mExecutor.executeOneTurn();
@@ -164,6 +171,7 @@ public class MainActivity extends ActionBarActivity
                     {
                         // This is provide a visible pause for fast computer moves.
                         Thread.sleep( 500, 0 );
+                        mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
                     }
                     catch (InterruptedException e)
                     {
@@ -217,6 +225,18 @@ public class MainActivity extends ActionBarActivity
         }
     }
 
+    private void showValidMoves()
+    {
+        // Only for human player
+        if ((mExecutor.getState() == GameState.TURN_PLAYER_0) && (mHumanPlayer == 0))
+        {
+            Board boardWithValid = (Board) mExecutor.getBoard().clone();
+            boardWithValid.determineValidMoves( mExecutor.getPlayer( mHumanPlayer ).getColor() );
+
+            mBoardAdaptor.redraw( boardWithValid );
+        }
+    }
+
     private void attemptMove( int position )
     {
         if (mExecutor != null)
@@ -229,6 +249,7 @@ public class MainActivity extends ActionBarActivity
 
 
     private final static int MSG_REDRAW = 341;
+    private final static int MSG_SHOWVALID = 342;
 
     private int mHumanPlayer = 0;
     private int mComputerPlayer = 1;
