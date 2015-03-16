@@ -1,5 +1,6 @@
 package ca.provenpath.othello;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
@@ -63,8 +64,6 @@ public class BoardAdapter extends BaseAdapter
     @Override
     public View getView( int position, View convertView, ViewGroup parent )
     {
-        if (position == 0) Log.w( TAG, "Drawing position 0");
-
         ImageView imageView;
         if (convertView == null)
         {
@@ -81,11 +80,25 @@ public class BoardAdapter extends BaseAdapter
 
         imageView.setImageResource( resourceForCell( mBoard.getLvalue( position ) ) );
         mBoardImages[position] = imageView;
+
+        if ( ! mBoard.getLvalue( position ).equals( mOldBoard.getLvalue( position ) ) )
+        {
+            // "Expand" animation for changed tiles
+            ObjectAnimator animatorX = ObjectAnimator.ofFloat( imageView, "scaleX", 0f, 1f );
+            animatorX.setDuration( 250 );
+            animatorX.start();
+
+            ObjectAnimator animatorY = ObjectAnimator.ofFloat( imageView, "scaleY", 0f, 1f );
+            animatorY.setDuration( 250 );
+            animatorY.start();
+        }
+
         return imageView;
     }
 
     public void redraw( Board newBoard )
     {
+        mOldBoard = mBoard;
         mBoard = (newBoard == null) ? new Board() : (Board) newBoard.clone();
 
         notifyDataSetChanged();
@@ -111,5 +124,6 @@ public class BoardAdapter extends BaseAdapter
 
     private Context mContext;
     private Board mBoard = new Board();
+    private Board mOldBoard = new Board();
     private ImageView[] mBoardImages = new ImageView[Board.BOARD_LSIZE];
 }

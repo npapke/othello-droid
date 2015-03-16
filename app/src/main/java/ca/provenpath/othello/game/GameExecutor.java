@@ -35,6 +35,8 @@ public class GameExecutor extends Observable
 
     public void endGame()
     {
+        isEnded = true;
+
         player[0].interruptMove();
         player[1].interruptMove();
 
@@ -60,11 +62,11 @@ public class GameExecutor extends Observable
                 moveNumber++;
                 if (board.hasValidMove( player[1].getColor() ))
                 {
-                    state = GameState.TURN_PLAYER_1;
+                    setState( GameState.TURN_PLAYER_1 );
                 }
                 else if (!board.hasValidMove( player[0].getColor() ))
                 {
-                    state = GameState.GAME_OVER;
+                    setState( GameState.GAME_OVER );
                 }
                 break;
 
@@ -73,11 +75,11 @@ public class GameExecutor extends Observable
                 moveNumber++;
                 if (board.hasValidMove( player[0].getColor() ))
                 {
-                    state = GameState.TURN_PLAYER_0;
+                    setState( GameState.TURN_PLAYER_0 );
                 }
                 else if (!board.hasValidMove( player[1].getColor() ))
                 {
-                    state = GameState.GAME_OVER;
+                    setState( GameState.GAME_OVER );
                 }
                 break;
 
@@ -91,6 +93,18 @@ public class GameExecutor extends Observable
 
         setChanged();
         notifyObservers();
+    }
+
+    /**
+     * Update state and prevent from being overwritten when game has ended
+     * @param state
+     */
+    private void setState( GameState state )
+    {
+        if (!isEnded)
+        {
+            this.state = state;
+        }
     }
 
 
@@ -176,5 +190,6 @@ public class GameExecutor extends Observable
         return moveNumber;
     }
 
+    private volatile boolean isEnded = false;
 
 }

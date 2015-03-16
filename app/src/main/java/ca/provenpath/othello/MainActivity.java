@@ -160,6 +160,14 @@ public class MainActivity extends ActionBarActivity
                 while (mExecutor.getState() != GameState.GAME_OVER)
                 {
                     mExecutor.executeOneTurn();
+                    try
+                    {
+                        // This is provide a visible pause for fast computer moves.
+                        Thread.sleep( 500, 0 );
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
                 }
             }
         }.start();
