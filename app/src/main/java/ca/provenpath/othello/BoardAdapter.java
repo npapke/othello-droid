@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Adapter;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -42,6 +43,24 @@ public class BoardAdapter extends BaseAdapter
     }
 
     @Override
+    public int getItemViewType( int position )
+    {
+        return Adapter.IGNORE_ITEM_VIEW_TYPE;
+    }
+
+    @Override
+    public int getViewTypeCount()
+    {
+        return 1;
+    }
+
+    @Override
+    public boolean hasStableIds()
+    {
+        return true;
+    }
+
+    @Override
     public View getView( int position, View convertView, ViewGroup parent )
     {
         if (position == 0) Log.w( TAG, "Drawing position 0");
@@ -67,14 +86,9 @@ public class BoardAdapter extends BaseAdapter
 
     public void redraw( Board newBoard )
     {
-        Board oldBoard = mBoard;
         mBoard = (newBoard == null) ? new Board() : (Board) newBoard.clone();
 
-        for (int i = 0; i < Board.BOARD_LSIZE; ++i)
-        {
-            if (oldBoard.getLvalue( i ) != mBoard.getLvalue( i ))
-                getView( i, mBoardImages[ i ], null );
-        }
+        notifyDataSetChanged();
     }
 
     private int resourceForCell( BoardValue bv )
