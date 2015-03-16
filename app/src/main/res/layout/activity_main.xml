@@ -18,6 +18,7 @@
         android:hint="Move"/>
 
     <TextView
+        android:id="@+id/human_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Human"/>
@@ -29,6 +30,7 @@
         android:hint="Human"/>
 
     <TextView
+        android:id="@+id/computer_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Computer"/>

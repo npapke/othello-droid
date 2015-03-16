@@ -47,7 +47,7 @@ public class MainActivity extends ActionBarActivity
         {
             public void onItemClick( AdapterView<?> parent, View v, int position, long id )
             {
-                Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
+                // Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
                 attemptMove( position );
             }
         } );
@@ -185,6 +185,25 @@ public class MainActivity extends ActionBarActivity
             moveNumber.setText( Integer.toString( mExecutor.getMoveNumber() ) );
             humanScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.BLACK ) ) );
             computerScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.WHITE ) ) );
+
+            switch (mExecutor.getState())
+            {
+                case TURN_PLAYER_0:
+                    ((TextView) findViewById( R.id.human_label )).setText( "Human, your turn" );
+                    ((TextView) findViewById( R.id.computer_label )).setText( "Computer" );
+                    break;
+
+                case TURN_PLAYER_1:
+                    ((TextView) findViewById( R.id.human_label )).setText( "Human" );
+                    ((TextView) findViewById( R.id.computer_label )).setText( "Computer processing" );
+                    break;
+
+                case GAME_OVER:
+                {
+                    Toast.makeText( MainActivity.this, "Game over", Toast.LENGTH_SHORT ).show();
+                    break;
+                }
+            }
 
             mBoardAdaptor.redraw( mExecutor.getBoard() );
         }
