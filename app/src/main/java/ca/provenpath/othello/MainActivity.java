@@ -184,42 +184,51 @@ public class MainActivity extends ActionBarActivity
 
     private void updateDisplay()
     {
-        TextView moveNumber = (TextView) findViewById( R.id.move_number );
-        TextView humanScore = (TextView) findViewById( R.id.human_score );
-        TextView computerScore = (TextView) findViewById( R.id.computer_score );
+        // TODO make this translatable
+        TextView messageView = (TextView) findViewById( R.id.message );
 
         if (mExecutor == null)
         {
-            moveNumber.setText( "" );
-            humanScore.setText( "" );
-            computerScore.setText( "" );
+            messageView.setText( "Select 'New Game' to start" );
 
             mBoardAdaptor.redraw( null );
         }
         else
         {
-            moveNumber.setText( Integer.toString( mExecutor.getMoveNumber() ) );
-            humanScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.BLACK ) ) );
-            computerScore.setText( Integer.toString( mExecutor.getBoard().countBoardValues( BoardValue.WHITE ) ) );
+            StringBuilder buf = new StringBuilder();
+
+            int humanScore = mExecutor.getBoard().countBoardValues( BoardValue.BLACK );
+            int computerScore = mExecutor.getBoard().countBoardValues( BoardValue.WHITE );
+
+            buf.append( String.format( "%d remaining, score %d - %d.",
+                    61 - mExecutor.getMoveNumber(),
+                    humanScore,
+                    computerScore ) );
 
             switch (mExecutor.getState())
             {
                 case TURN_PLAYER_0:
-                    ((TextView) findViewById( R.id.human_label )).setText( "Human, your turn" );
-                    ((TextView) findViewById( R.id.computer_label )).setText( "Computer" );
+                    buf.append( "  Your turn." );
                     break;
 
                 case TURN_PLAYER_1:
-                    ((TextView) findViewById( R.id.human_label )).setText( "Human" );
-                    ((TextView) findViewById( R.id.computer_label )).setText( "Computer processing" );
+                    buf.append( "  Processing." );
                     break;
 
                 case GAME_OVER:
                 {
                     Toast.makeText( MainActivity.this, "Game over", Toast.LENGTH_SHORT ).show();
+                    if (humanScore > computerScore)
+                        buf.append( "  You WIN!" );
+                    else if (humanScore < computerScore)
+                        buf.append( "  Game over.  You did not win." );
+                    else
+                        buf.append( "  Tied game." );
                     break;
                 }
             }
+
+            messageView.setText( buf.toString() );
 
             mBoardAdaptor.redraw( mExecutor.getBoard() );
         }
