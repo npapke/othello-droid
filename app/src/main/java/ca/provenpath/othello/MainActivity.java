@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -13,8 +14,12 @@ import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+
 import java.util.Observable;
 import java.util.Observer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
@@ -26,6 +31,8 @@ import ca.provenpath.othello.game.observer.GameState;
 
 public class MainActivity extends ActionBarActivity
 {
+    public final static String TAG = MainActivity.class.getName();
+
     /*
      * ====================================================================
      *
@@ -37,7 +44,26 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onCreate( Bundle savedInstanceState )
     {
+        Log.i(TAG, "onCreate");
+
         super.onCreate( savedInstanceState );
+
+        if (savedInstanceState != null)
+        {
+            try
+            {
+                Gson deserializer = new Gson();
+                String data = savedInstanceState.getString( KEY_EXECUTOR );
+                Log.w( TAG, "serialized=" + data );
+                mExecutor = deserializer.fromJson( savedInstanceState.getString( KEY_EXECUTOR ), GameExecutor.class );
+            }
+            catch (Exception e)
+            {
+                Log.w( TAG, "Deserialization failed.", e );
+                mExecutor = null;
+            }
+        }
+
         setContentView( R.layout.activity_main );
 
         mBoardAdaptor = new BoardAdapter( this );
@@ -88,8 +114,60 @@ public class MainActivity extends ActionBarActivity
         };
 
         mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
+
+        // Do this after everything is initialized
+        runExecutor( mExecutor );
     }
 
+    @Override
+    protected void onDestroy()
+    {
+        Log.i(TAG, "onDestroy");
+
+        if (mExecutor != null)
+            mExecutor.endGame();
+
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onSaveInstanceState( Bundle bundle )
+    {
+        Log.i(TAG, "onSaveInstanceState");
+
+        super.onSaveInstanceState( bundle );
+
+        try
+        {
+            Gson serializer = new Gson();
+
+            // FIXME Thread-safety
+            String data = serializer.toJson( mExecutor );
+
+            Log.i( TAG, "Serialized=" + data );
+
+            String noObservers = "\"observers\":\\[null\\],";
+            Pattern pattern = Pattern.compile( noObservers );
+            Matcher matcher = pattern.matcher( data );
+            data = matcher.replaceAll( "" );
+
+            Log.i( TAG, "Serialized=" + data );
+
+            bundle.putString( KEY_EXECUTOR, data );
+        }
+        catch (Exception e)
+        {
+            Log.w( TAG, "Serialization failed", e );
+        }
+    }
+
+    @Override
+    protected void onRestoreInstanceState( Bundle bundle )
+    {
+        Log.i(TAG, "onSaveInstanceState");
+
+        super.onRestoreInstanceState( bundle );
+    }
 
     /*
      * ====================================================================
@@ -144,42 +222,47 @@ public class MainActivity extends ActionBarActivity
         mExecutor.setPlayer( mHumanPlayer, new HumanPlayer( BoardValue.BLACK ) );
         mExecutor.setPlayer( mComputerPlayer, new ComputerPlayer( BoardValue.WHITE ) );
 
-        mExecutor.addObserver( new Observer()
-        {
-            @Override
-            public void update( Observable observable, Object data )
-            {
-                // Send redraw request to UI thread.
-                mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
-            }
-        } );
-
         mExecutor.newGame();
+        runExecutor( mExecutor );
+    }
 
-        // Run the game on a separate thread
-        new Thread()
+    private void runExecutor( final GameExecutor executor )
+    {
+        if (executor != null)
         {
-            @Override
-            public void run()
+            executor.addObserver( new Observer()
             {
-                mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
-
-                while (mExecutor.getState() != GameState.GAME_OVER)
+                @Override
+                public void update( Observable observable, Object data )
                 {
-                    mExecutor.executeOneTurn();
-                    try
+                    // Send redraw request to UI thread.
+                    mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
+                }
+            } );
+
+            new Thread()
+            {
+                @Override
+                public void run()
+                {
+                    mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
+
+                    while (executor.getState() != GameState.GAME_OVER)
                     {
-                        // This is provide a visible pause for fast computer moves.
-                        Thread.sleep( 500, 0 );
-                        mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
-                    }
-                    catch (InterruptedException e)
-                    {
+                        executor.executeOneTurn();
+                        try
+                        {
+                            // This is to provide a visible pause for fast computer moves.
+                            Thread.sleep( 500, 0 );
+                            mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
+                        }
+                        catch (InterruptedException e)
+                        {
+                        }
                     }
                 }
-            }
-        }.start();
-
+            }.start();
+        }
     }
 
     private void updateDisplay()
@@ -259,6 +342,8 @@ public class MainActivity extends ActionBarActivity
 
     private final static int MSG_REDRAW = 341;
     private final static int MSG_SHOWVALID = 342;
+
+    private final static String KEY_EXECUTOR = MainActivity.class.getName() + ".executor";
 
     private int mHumanPlayer = 0;
     private int mComputerPlayer = 1;

@@ -41,7 +41,7 @@ public class Board implements Cloneable, Iterable<Position>
     /**
      * Linear offset for adjacent cells.
      */
-    private int adjacentOffsetTable[] =
+    private static int adjacentOffsetTable[] =
     {
         1,
         -1,

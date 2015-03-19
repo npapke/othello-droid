@@ -6,20 +6,27 @@
 package ca.provenpath.othello.game;
 
 
+import java.security.PublicKey;
+
 /**
  * Abstraction for a player of the game.
  * @author npapke
  */
-public abstract class Player
+public class Player
 {
+    public Player()
+    {
+        color = BoardValue.EMPTY;
+    }
+
     /** 
      * Gives the player the opportunity to perform a move on
      * the specified game board.
      * @param board the game board to make the move on
      */
-    public abstract void makeMove( Board board );
+    public void makeMove( Board board ) {}
 
-    public abstract void interruptMove();
+    public void interruptMove() {}
 
     //
     // ------------------- Bean Pattern ----------------

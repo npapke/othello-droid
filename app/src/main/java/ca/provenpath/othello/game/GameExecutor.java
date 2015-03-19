@@ -8,6 +8,8 @@ package ca.provenpath.othello.game;
 import android.util.Log;
 
 import ca.provenpath.othello.game.observer.GameState;
+
+import java.io.Serializable;
 import java.util.Observable;
 
 /**

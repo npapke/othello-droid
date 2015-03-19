@@ -85,7 +85,7 @@ public class Strategy
 
         // Scale the value to ensure that terminal boards are more important
         // than non-terminal boards
-        return score * 10000;
+        return (score > 0) ? (100000 + score * 100) : (-100000 - score * 100);
     }
 
 
