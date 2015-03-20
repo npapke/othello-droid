@@ -28,9 +28,13 @@ public class ComputerPlayer extends Player
 
     public ComputerPlayer( BoardValue color )
     {
-        setColor( color );
+        super( color );
     }
 
+    public ComputerPlayer( String serial )
+    {
+        super( serial );
+    }
 
     /**
      * Make a move on the board.

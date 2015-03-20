@@ -14,12 +14,23 @@ import java.security.PublicKey;
  */
 public class Player
 {
-    public Player()
+    public Player( BoardValue color )
     {
-        color = BoardValue.EMPTY;
+        this.color = color;
     }
 
-    /** 
+    public Player( String serial )
+    {
+        this.color = BoardValue.valueOf( serial );
+    }
+
+    @Override
+    public String toString()
+    {
+        return color.name();
+    }
+
+    /**
      * Gives the player the opportunity to perform a move on
      * the specified game board.
      * @param board the game board to make the move on

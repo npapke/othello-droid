@@ -14,7 +14,12 @@ public class HumanPlayer extends Player
 
     public HumanPlayer( BoardValue color )
     {
-        setColor( color );
+        super( color );
+    }
+
+    public HumanPlayer( String serial )
+    {
+        super( serial );
     }
 
     @Override

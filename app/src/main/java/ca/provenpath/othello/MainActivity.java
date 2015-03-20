@@ -25,6 +25,7 @@ import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
 import ca.provenpath.othello.game.ComputerPlayer;
 import ca.provenpath.othello.game.GameExecutor;
+import ca.provenpath.othello.game.GameExecutorSerializer;
 import ca.provenpath.othello.game.HumanPlayer;
 import ca.provenpath.othello.game.observer.GameState;
 
@@ -50,18 +51,7 @@ public class MainActivity extends ActionBarActivity
 
         if (savedInstanceState != null)
         {
-            try
-            {
-                Gson deserializer = new Gson();
-                String data = savedInstanceState.getString( KEY_EXECUTOR );
-                Log.w( TAG, "serialized=" + data );
-                mExecutor = deserializer.fromJson( savedInstanceState.getString( KEY_EXECUTOR ), GameExecutor.class );
-            }
-            catch (Exception e)
-            {
-                Log.w( TAG, "Deserialization failed.", e );
-                mExecutor = null;
-            }
+            mExecutor = GameExecutorSerializer.deserialize( savedInstanceState.getString( KEY_EXECUTOR ) );
         }
 
         setContentView( R.layout.activity_main );
@@ -137,28 +127,8 @@ public class MainActivity extends ActionBarActivity
 
         super.onSaveInstanceState( bundle );
 
-        try
-        {
-            Gson serializer = new Gson();
-
-            // FIXME Thread-safety
-            String data = serializer.toJson( mExecutor );
-
-            Log.i( TAG, "Serialized=" + data );
-
-            String noObservers = "\"observers\":\\[null\\],";
-            Pattern pattern = Pattern.compile( noObservers );
-            Matcher matcher = pattern.matcher( data );
-            data = matcher.replaceAll( "" );
-
-            Log.i( TAG, "Serialized=" + data );
-
-            bundle.putString( KEY_EXECUTOR, data );
-        }
-        catch (Exception e)
-        {
-            Log.w( TAG, "Serialization failed", e );
-        }
+        if (mExecutor != null)
+            bundle.putString( KEY_EXECUTOR, GameExecutorSerializer.serialize( mExecutor ) );
     }
 
     @Override
