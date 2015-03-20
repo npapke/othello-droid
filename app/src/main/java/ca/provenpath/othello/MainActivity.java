@@ -270,7 +270,7 @@ public class MainActivity extends ActionBarActivity
 
                 case GAME_OVER:
                 {
-                    Toast.makeText( MainActivity.this, "Game over", Toast.LENGTH_SHORT ).show();
+                    // Toast.makeText( MainActivity.this, "Game over", Toast.LENGTH_SHORT ).show();
                     if (humanScore > computerScore)
                         buf.append( "  You WIN!" );
                     else if (humanScore < computerScore)

@@ -37,6 +37,8 @@ public class GameExecutorSerializer
             Log.i( TAG, "serialized=" + serial );
 
             GameExecutor ge = deserializer.fromJson( serial, GameExecutor.class );
+
+            // Rehydrated observers are stale
             ge.deleteObservers();
 
             return ge;
@@ -59,13 +61,6 @@ public class GameExecutorSerializer
 
             Log.i( TAG, "Serialized=" + data );
 
-            String noObservers = "\"observers\":\\[null\\],";
-            Pattern pattern = Pattern.compile( noObservers );
-            Matcher matcher = pattern.matcher( data );
-            data = matcher.replaceAll( "" );
-
-            Log.i( TAG, "Serialized=" + data );
-
             return data;
         }
         catch (Exception e)
@@ -84,6 +79,14 @@ public class GameExecutorSerializer
 
         return serializer;
     }
+
+    /*
+     * ==============================================================
+     *
+     * Serialize Player subclasses as, e.g.,
+     * ca.provenpath.othello.game.ComputerPlayer;WHITE
+     *
+     */
 
     private class PlayerDeserializer implements JsonDeserializer<Player>
     {
