@@ -24,12 +24,30 @@
         android:stretchMode="spacingWidthUniform"
         />
 
-    <Button
-        android:id="@+id/newgame"
-        android:layout_width="wrap_content"
-        android:layout_height="79dp"
-        android:text="@string/newgame"
-        android:layout_gravity="right"
-        android:enabled="true"/>
+    <RelativeLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+
+        <Button
+            android:id="@+id/newgame"
+            android:text="@string/newgame"
+            android:layout_width="@dimen/main_activity_button_width"
+            android:layout_height="@dimen/main_activity_button_height"
+            android:layout_gravity="left"
+            android:enabled="true"
+            android:layout_alignParentEnd="false"
+            android:layout_alignParentStart="true"/>
+        <Button
+            android:id="@+id/undo"
+            android:text="@string/undo"
+            android:layout_width="@dimen/main_activity_button_width"
+            android:layout_height="@dimen/main_activity_button_height"
+            android:layout_gravity="right"
+            android:enabled="true"
+            android:layout_alignParentEnd="true"/>
+
+    </RelativeLayout>
+
 </LinearLayout>
 

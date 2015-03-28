@@ -27,6 +27,8 @@ import ca.provenpath.othello.game.ComputerPlayer;
 import ca.provenpath.othello.game.GameExecutor;
 import ca.provenpath.othello.game.GameExecutorSerializer;
 import ca.provenpath.othello.game.HumanPlayer;
+import ca.provenpath.othello.game.Move;
+import ca.provenpath.othello.game.Position;
 import ca.provenpath.othello.game.observer.GameState;
 
 
@@ -52,6 +54,7 @@ public class MainActivity extends ActionBarActivity
         if (savedInstanceState != null)
         {
             mExecutor = GameExecutorSerializer.deserialize( savedInstanceState.getString( KEY_EXECUTOR ) );
+            mLastMoveExecutorSerial = savedInstanceState.getString( KEY_LAST_MOVE );
         }
 
         setContentView( R.layout.activity_main );
@@ -62,12 +65,34 @@ public class MainActivity extends ActionBarActivity
 
         gridview.setOnItemClickListener( new AdapterView.OnItemClickListener()
         {
+            @Override
             public void onItemClick( AdapterView<?> parent, View v, int position, long id )
             {
                 // Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
                 attemptMove( position );
             }
         } );
+
+        gridview.setOnItemLongClickListener( new AdapterView.OnItemLongClickListener()
+        {
+            @Override
+            public boolean onItemLongClick( AdapterView<?> parent, View v, int position, long id )
+            {
+                simulateMove( position );
+                return true;
+            }
+        } );
+
+
+        findViewById( R.id.undo ).setOnClickListener( new View.OnClickListener()
+        {
+            @Override
+            public void onClick( View v )
+            {
+                undoGame();
+            }
+        } );
+
 
         findViewById( R.id.newgame ).setOnClickListener( new View.OnClickListener()
         {
@@ -129,6 +154,9 @@ public class MainActivity extends ActionBarActivity
 
         if (mExecutor != null)
             bundle.putString( KEY_EXECUTOR, GameExecutorSerializer.serialize( mExecutor ) );
+
+        if (mLastMoveExecutorSerial != null)
+            bundle.putString( KEY_LAST_MOVE, mLastMoveExecutorSerial );
     }
 
     @Override
@@ -181,6 +209,9 @@ public class MainActivity extends ActionBarActivity
      * --------------------------------------------------------------------
      */
 
+    /**
+     * (Re)initializes the game state.
+     */
     private void newGame()
     {
         if (mExecutor != null)
@@ -194,6 +225,31 @@ public class MainActivity extends ActionBarActivity
 
         mExecutor.newGame();
         runExecutor( mExecutor );
+    }
+
+    /**
+     * Restores an earlier game state, if possible.
+     */
+    private void undoGame()
+    {
+        if (mLastMoveExecutorSerial != null)
+        {
+            GameExecutor lastMoveExecutor = GameExecutorSerializer.deserialize( mLastMoveExecutorSerial );
+
+            if (lastMoveExecutor != null)
+            {
+                if (mExecutor != null)
+                {
+                    mExecutor.endGame();
+                }
+
+                mExecutor = lastMoveExecutor;
+
+                runExecutor( mExecutor );
+            }
+
+            mLastMoveExecutorSerial = null;
+        }
     }
 
     private void runExecutor( final GameExecutor executor )
@@ -239,6 +295,8 @@ public class MainActivity extends ActionBarActivity
     {
         // TODO make this translatable
         TextView messageView = (TextView) findViewById( R.id.message );
+
+        findViewById( R.id.undo ).setEnabled( mLastMoveExecutorSerial != null );
 
         if (mExecutor == null)
         {
@@ -305,20 +363,46 @@ public class MainActivity extends ActionBarActivity
         {
             HumanPlayer human = (HumanPlayer) mExecutor.getPlayer( mHumanPlayer );
             if (human != null)
+            {
+                // FIXME this breaks encapsulation.  Probably should have the game executor
+                // track undo moves.
+                if (mExecutor.getBoard().isValidMove( new Move( human.getColor(), new Position( position )  ) ))
+                {
+                    mLastMoveExecutorSerial = GameExecutorSerializer.serialize( mExecutor );
+                }
+
                 human.attemptMove( position );
+            }
         }
     }
+
+    private void simulateMove( int position )
+    {
+        if (mExecutor != null)
+        {
+            Board board = (Board) mExecutor.getBoard().clone();
+            Move m = new Move( mExecutor.getPlayer( mHumanPlayer ).getColor(), new Position( position ) );
+            if (board.isValidMove( m ))
+            {
+                board.makeMove( m );
+                mBoardAdaptor.redraw( board );
+            }
+        }
+    }
+
 
 
     private final static int MSG_REDRAW = 341;
     private final static int MSG_SHOWVALID = 342;
 
     private final static String KEY_EXECUTOR = MainActivity.class.getName() + ".executor";
+    private final static String KEY_LAST_MOVE = MainActivity.class.getName() + ".lastMove";
 
     private int mHumanPlayer = 0;
     private int mComputerPlayer = 1;
 
     private Handler mHandler;
     private GameExecutor mExecutor;
+    private String mLastMoveExecutorSerial;
     private BoardAdapter mBoardAdaptor;
 }
