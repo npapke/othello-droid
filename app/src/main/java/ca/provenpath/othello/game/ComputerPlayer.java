@@ -166,7 +166,7 @@ public class ComputerPlayer extends Player
     //
     // ---------------- Bean Pattern ---------------
     //
-    protected int maxDepth = 5;
+    protected int maxDepth = 4;
 
 
     /**
@@ -191,7 +191,7 @@ public class ComputerPlayer extends Player
     }
 
 
-    protected Strategy strategy = new Strategy();
+    protected Strategy strategy = new AdaptiveStrategy();
 
 
     /**

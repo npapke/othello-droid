@@ -53,6 +53,17 @@ public class Board implements Cloneable, Iterable<Position>
         -BOARD_SIZE - 1
     };
 
+    /**
+     * Cardinal directions.  Like the adjacentOffsetTable, except only half.
+     */
+    private static int cardinalDirectionTable[] =
+    {
+        1,
+        BOARD_SIZE,
+        BOARD_SIZE + 1,
+        BOARD_SIZE - 1
+    };
+
 
     /**
      * Construct a board and initialize the cells for a game start.
@@ -72,7 +83,7 @@ public class Board implements Cloneable, Iterable<Position>
 
 
     /**
-     * Construct a board and initialize the cells for a game start.
+     * Construct a board
      * @param other the board to copy
      */
     public Board( Board other )
@@ -164,6 +175,34 @@ public class Board implements Cloneable, Iterable<Position>
         return false;
     }
 
+
+    /**
+     * Determines whether a the position on the board is protected.
+     * Protected positions cannot be taken again.
+     * @param p position
+     * @return true if protected.
+     */
+    public boolean isProtected( Position p )
+    {
+        if (!isOccupiedBoardValue( p ))
+        {
+            return false;
+        }
+
+        // FIXME This won't identify all situations that protect a cell,
+        // e.g., xox?oxoo
+
+        for (int direction : cardinalDirectionTable)
+        {
+            if ( !isSameColor( direction, p ) && !isSameColor( -direction, p ))
+            {
+                // short-circuit.  We won't have four cardinals
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /**
      * Does the specified player have a valid move?
@@ -506,6 +545,38 @@ public class Board implements Cloneable, Iterable<Position>
             ++otherPieces;
         }
     }
+
+    /**
+     * Checks that all pieces are of the same color from the specified position and direction.
+     * @param direction linear offset
+     * @param pos starting position
+     * @return true iff pieces are of the same color
+     */
+    private boolean isSameColor( int direction, Position pos )
+    {
+        final BoardValue thisPlayer = getValue( pos );
+        Position cur = new Position( pos.getLinear() );
+
+        for (;;)
+        {
+            Position last = new Position( cur.getLinear() );
+            cur = cur.add( direction );
+
+            if (!cur.isValid() || !cur.isAdjacent( last ))
+            {
+                // past the edge of the board
+                return true;
+            }
+
+            BoardValue curBoardValue = getValue( cur );
+
+            if (curBoardValue != thisPlayer)
+            {
+                return false;
+            }
+        }
+    }
+
 
 
     /**

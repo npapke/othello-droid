@@ -128,10 +128,17 @@ public class MainActivity extends ActionBarActivity
             }
         };
 
-        mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
-
         // Do this after everything is initialized
-        runExecutor( mExecutor );
+        if (mExecutor == null)
+        {
+            newGame();
+        }
+        else
+        {
+            runExecutor( mExecutor );
+        }
+
+        mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
     }
 
     @Override
