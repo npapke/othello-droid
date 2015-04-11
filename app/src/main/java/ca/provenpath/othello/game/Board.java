@@ -177,31 +177,37 @@ public class Board implements Cloneable, Iterable<Position>
 
 
     /**
-     * Determines whether a the position on the board is protected.
-     * Protected positions cannot be taken again.
+     * Determines how well a the position on the board is protected,
+     * i.e., how difficult it is to flip the piece in the specified
+     * position.
+     * <p>
+     * A score of 0 indicates the piece is vulnerable in all directions.
+     * A score of 4 indicates the piece cannot be flipped.
+     * </p>
      * @param p position
      * @return true if protected.
      */
-    public boolean isProtected( Position p )
+    public int countProtected( Position p )
     {
         if (!isOccupiedBoardValue( p ))
         {
-            return false;
+            return 0;
         }
 
         // FIXME This won't identify all situations that protect a cell,
         // e.g., xox?oxoo
 
+        int score = 0;
+
         for (int direction : cardinalDirectionTable)
         {
-            if ( !isSameColor( direction, p ) && !isSameColor( -direction, p ))
+            if ( isSameColor( direction, p ) || isSameColor( -direction, p ))
             {
-                // short-circuit.  We won't have four cardinals
-                return false;
+                ++score;
             }
         }
 
-        return true;
+        return score;
     }
 
     /**

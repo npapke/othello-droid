@@ -23,15 +23,13 @@ public class AdaptiveStrategy extends Strategy
             {
                 score++;
                 numMoves++;
-                if (board.isProtected( pos ))
-                    protectedScore++;
+                protectedScore += board.countProtected( pos );
             }
             else if (curCell == otherPlayer)
             {
                 score--;
                 numMoves++;
-                if (board.isProtected( pos ))
-                    protectedScore--;
+                protectedScore -= board.countProtected( pos );
             }
             else if (board.isValidMove( new Move( player, pos ) ))
             {
@@ -41,15 +39,13 @@ public class AdaptiveStrategy extends Strategy
 
         int finalScore;
 
-        // TODO proteced should be a ranged value rather than a boolean
-
         freedom = scale( freedom, 0, 16 );
         score = scale( score, -64, 64 );
-        protectedScore = scale( protectedScore, -64, 64 );
+        protectedScore = scale( protectedScore, -128, 128 );  // max range is [-256,256]
 
         if (numMoves < 12)
         {
-            finalScore = (freedom * 30) + (score * 70);
+            finalScore = (freedom * 30) + (protectedScore * 70) + (score * 0);
         }
         else if (numMoves < 50)
         {
@@ -57,7 +53,7 @@ public class AdaptiveStrategy extends Strategy
         }
         else
         {
-            finalScore = (protectedScore * 30) + (score * 70);
+            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 70);
         }
 
         return finalScore;

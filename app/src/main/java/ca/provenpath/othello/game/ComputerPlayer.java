@@ -80,59 +80,69 @@ public class ComputerPlayer extends Player
      * @return the value of board
      */
     private int minimaxAB(
-        Board board,
-        BoardValue player,
-        int depth,
-        int alpha,
-        int beta )
+            Board board,
+            BoardValue player,
+            int depth,
+            int alpha,
+            int beta )
     {
         if (depth >= maxDepth || isInterrupted)
         {
-            return strategy.determineBoardValue( player, board );
+            return strategy.determineBoardValue( color, board );
         }
 
         boolean validMoveSeen = false;
+        int value;
 
-        for (Position pos : board)
+        if (player == color)
         {
-            Move m = new Move( player, pos );
+            value = Integer.MIN_VALUE;
 
-            if (board.isValidMove( m ))
+            for (Position pos : board)
             {
-                Board copyOfBoard = (Board) board.clone();
+                Move m = new Move( player, pos );
 
-                copyOfBoard.makeMove( m );
-
-                int result = minimaxAB( copyOfBoard,
-                    player.otherPlayer(), depth + 1, alpha, beta );
-                
-                // Log.d( TAG, "minimaxAB: " + depth + " " + player + " " + pos + " " + result );
-
-                if (player == color)
+                if (board.isValidMove( m ))
                 {
-                    if (-result > alpha)
-                    {
-                        alpha = -result;
+                    validMoveSeen = true;
 
+                    Board copyOfBoard = (Board) board.clone();
+                    copyOfBoard.makeMove( m );
+
+                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta );
+                    if (result > value)
+                    {
+                        value = result;
                         if (depth == 0)
-                        {
                             bestPos = pos;
-                        }
                     }
-                }
-                else
-                {
-                    if (result < beta)
-                    {
-                        beta = result;
-                    }
-                }
 
-                validMoveSeen = true;
-                
-                if (alpha > beta)
+                    alpha = Math.max( value, alpha );
+                    if (beta <= alpha)
+                        break;
+                }
+            }
+        }
+        else
+        {
+            value = Integer.MAX_VALUE;
+
+            for (Position pos : board)
+            {
+                Move m = new Move( player, pos );
+
+                if (board.isValidMove( m ))
                 {
-                    break;
+                    validMoveSeen = true;
+
+                    Board copyOfBoard = (Board) board.clone();
+                    copyOfBoard.makeMove( m );
+
+                    value = Math.min( value, minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta ) );
+                    beta = Math.min( value, beta );
+
+                    if (beta <= alpha)
+                        break;
                 }
             }
         }
@@ -143,23 +153,16 @@ public class ComputerPlayer extends Player
 
             if (board.hasValidMove( player.otherPlayer() ))
             {
-                return minimaxAB( board, player.otherPlayer(), depth, alpha, beta );
+                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta );
             }
             else
             {
                 // neither player has a valid move.  return the score
-                return strategy.determineFinalScore( player, board );
+                value = strategy.determineFinalScore( player, board );
             }
         }
 
-        if (player == color)
-        {
-            return alpha;
-        }
-        else
-        {
-            return beta;
-        }
+        return value;
     }
 
 

@@ -73,7 +73,7 @@ public class BoardAdapter extends BaseAdapter
             // TODO determine size dynamically
             int size =  110; // Math.min( parent.getHeight(), parent.getWidth() ) / 8;
 
-            Log.i( TAG, String.format( "Parent size: %d x %d", parent.getMinimumWidth(), parent.getMinimumHeight() ) );
+            Log.i( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
 
             imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
             imageView.setScaleType( ImageView.ScaleType.FIT_XY );
