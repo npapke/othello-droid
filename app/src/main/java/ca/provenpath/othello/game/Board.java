@@ -275,6 +275,7 @@ public class Board implements Cloneable, Iterable<Position>
 
         BoardValue thisPlayer = m.getValue();
         setBoardValue( m );
+        lastMove = m;
 
         for (int direction : adjacentOffsetTable)
         {
@@ -584,6 +585,12 @@ public class Board implements Cloneable, Iterable<Position>
     }
 
 
+    public Move getLastMove()
+    {
+        return lastMove;
+    }
+
+    Move lastMove;
 
     /**
      * Iterator across the entire board
