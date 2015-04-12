@@ -19,13 +19,6 @@ public class ComputerPlayer extends Player
 {
     public final static String TAG = ComputerPlayer.class.getName();
 
-    /**
-     * Best position for current board.
-     * <br/>
-     * TODO this should be handled as an output/return value of the minimaxAB() method
-     */
-    Position bestPos;
-
     public ComputerPlayer( BoardValue color )
     {
         super( color );
@@ -49,15 +42,14 @@ public class ComputerPlayer extends Player
         Assert.isTrue( board.hasValidMove( color ) );
 
         isInterrupted = false;
-        bestPos = null;
 
-        int result = minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE );
+        MiniMaxResult result = minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE );
 
-        Assert.notNull( bestPos );
+        Assert.notNull( result.getBestMove() );
 
-        Log.i( TAG, "makeMove: " + bestPos + ", value: " + result );
+        Log.i( TAG, "makeMove: " + result.getBestMove() + ", value: " + result.getValue() );
 
-        board.makeMove( new Move( color, bestPos ) );
+        board.makeMove( new Move( color, result.getBestMove() ) );
     }
 
     @Override
@@ -79,7 +71,7 @@ public class ComputerPlayer extends Player
      * @param beta the beta maximum
      * @return the value of board
      */
-    private int minimaxAB(
+    private MiniMaxResult minimaxAB(
             Board board,
             BoardValue player,
             int depth,
@@ -88,11 +80,12 @@ public class ComputerPlayer extends Player
     {
         if (depth >= maxDepth || isInterrupted)
         {
-            return strategy.determineBoardValue( color, board );
+            return new MiniMaxResult( strategy.determineBoardValue( color, board ) );
         }
 
         boolean validMoveSeen = false;
         int value;
+        Position bestPos = null;
 
         if (player == color)
         {
@@ -109,12 +102,11 @@ public class ComputerPlayer extends Player
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove( m );
 
-                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta );
+                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta ).getValue();
                     if (result > value)
                     {
                         value = result;
-                        if (depth == 0)
-                            bestPos = pos;
+                        bestPos = pos;
                     }
 
                     alpha = Math.max( value, alpha );
@@ -138,7 +130,7 @@ public class ComputerPlayer extends Player
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove( m );
 
-                    value = Math.min( value, minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta ) );
+                    value = Math.min( value, minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta ).getValue() );
                     beta = Math.min( value, beta );
 
                     if (beta <= alpha)
@@ -153,16 +145,55 @@ public class ComputerPlayer extends Player
 
             if (board.hasValidMove( player.otherPlayer() ))
             {
-                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta );
+                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta ).getValue();
             }
             else
             {
                 // neither player has a valid move.  return the score
-                value = strategy.determineFinalScore( player, board );
+                value = strategy.determineFinalScore( color, board );
             }
         }
 
-        return value;
+        return new MiniMaxResult( value, bestPos );
+    }
+
+
+    private class MiniMaxResult
+    {
+        public MiniMaxResult( int value )
+        {
+            this.value = value;
+        }
+
+        public MiniMaxResult( int value, Position bestMove )
+        {
+            this.value = value;
+            this.bestMove = bestMove;
+        }
+
+        public int getValue()
+        {
+            return value;
+        }
+
+        public void setValue( int value )
+        {
+            this.value = value;
+        }
+
+        private int value;
+
+        public Position getBestMove()
+        {
+            return bestMove;
+        }
+
+        public void setBestMove( Position bestMove )
+        {
+            this.bestMove = bestMove;
+        }
+
+        private Position bestMove;
     }
 
 

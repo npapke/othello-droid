@@ -73,6 +73,7 @@ public class MainActivity extends ActionBarActivity
             }
         } );
 
+        /*
         gridview.setOnItemLongClickListener( new AdapterView.OnItemLongClickListener()
         {
             @Override
@@ -82,6 +83,7 @@ public class MainActivity extends ActionBarActivity
                 return true;
             }
         } );
+        */
 
 
         findViewById( R.id.undo ).setOnClickListener( new View.OnClickListener()
