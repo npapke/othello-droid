@@ -8,13 +8,11 @@ package ca.provenpath.othello.game;
 
 import android.util.Log;
 
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -57,14 +55,16 @@ public class ComputerPlayer extends Player
         isInterrupted = false;
 
         Stats stats = new Stats();
-        MiniMaxResult result = parallelMinimaxAB( board, color, 0, stats );
+        MiniMaxResult result = false
+                ? parallelMinimaxAB( board, color, 0, stats )
+                : minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE, stats );
 
         Assert.notNull( result.getBestMove() );
 
         Log.i( TAG, "makeMove: " + result.getBestMove() + ", value: " + result.getValue() );
         long duration = stats.duration();
-        Log.i( TAG, String.format( "parallelMinimaxAB: %d boards evaluated in %d ms. %d boards/sec",
-                        stats.getBoardsEvaluated(), duration, stats.getBoardsEvaluated() * 1000 / duration ) );
+        Log.i( TAG, String.format( "%d boards evaluated in %d ms. %d boards/sec",
+                stats.getBoardsEvaluated(), duration, stats.getBoardsEvaluated() * 1000 / duration ) );
 
         board.makeMove( new Move( color, result.getBestMove() ) );
     }
@@ -90,7 +90,7 @@ public class ComputerPlayer extends Player
             Board board,
             final BoardValue player,
             final int depth,
-            final Stats stats)
+            final Stats stats )
     {
         Assert.isTrue( maxDepth > 0 );
 
@@ -109,17 +109,16 @@ public class ComputerPlayer extends Player
                 copyOfBoard.makeMove( m );
 
                 FutureTask<MiniMaxResult> future = new FutureTask<MiniMaxResult>(
-                new Callable<MiniMaxResult>()
-                {
-                    @Override
-                    public MiniMaxResult call() throws Exception
-                    {
-                        MiniMaxResult result = new MiniMaxResult(
-                                minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, Integer.MIN_VALUE, Integer.MAX_VALUE, stats ).getValue(),
-                                copyOfBoard.getLastMove().getPosition() );
-                        return result;
-                    }
-                } );
+                        new Callable<MiniMaxResult>()
+                        {
+                            @Override
+                            public MiniMaxResult call() throws Exception
+                            {
+                                return new MiniMaxResult(
+                                        minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, Integer.MIN_VALUE, Integer.MAX_VALUE, stats ).getValue(),
+                                        copyOfBoard.getLastMove().getPosition() );
+                            }
+                        } );
 
                 threadPool.execute( future );
                 futures.add( future );
@@ -171,7 +170,7 @@ public class ComputerPlayer extends Player
             int depth,
             int alpha,
             int beta,
-            Stats stats)
+            Stats stats )
     {
         if (depth >= maxDepth || isInterrupted)
         {

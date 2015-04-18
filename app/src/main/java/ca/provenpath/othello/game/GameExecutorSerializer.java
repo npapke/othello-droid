@@ -34,7 +34,7 @@ public class GameExecutorSerializer
         try
         {
             Gson deserializer = new GameExecutorSerializer().makeGson();
-            Log.i( TAG, "serialized=" + serial );
+            Log.d( TAG, "serialized=" + serial );
 
             GameExecutor ge = deserializer.fromJson( serial, GameExecutor.class );
 
@@ -59,7 +59,7 @@ public class GameExecutorSerializer
             // FIXME Thread-safety
             String data = serializer.toJson( src );
 
-            Log.i( TAG, "Serialized=" + data );
+            Log.d( TAG, "Serialized=" + data );
 
             return data;
         }
@@ -96,7 +96,7 @@ public class GameExecutorSerializer
             try
             {
                 String serial = json.getAsJsonPrimitive().getAsString();
-                Log.i( TAG, "PlayerSerializer deserialize " + serial );
+                Log.d( TAG, "PlayerSerializer deserialize " + serial );
 
                 String[] fields = serial.split( ";", 2 );
                 String playerClassName = fields[0];
@@ -124,7 +124,7 @@ public class GameExecutorSerializer
             out.append( ';' );
             out.append( src.toString() );
 
-            Log.i( TAG, "PlayerSerializer serialize " + out.toString() );
+            Log.d( TAG, "PlayerSerializer serialize " + out.toString() );
 
             return new JsonPrimitive( out.toString() );
         }

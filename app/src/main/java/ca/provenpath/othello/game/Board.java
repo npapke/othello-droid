@@ -10,6 +10,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import static ca.provenpath.othello.game.BoardValue.*;
@@ -36,7 +37,7 @@ public class Board implements Cloneable, Iterable<Position>
      * The board cells.  A linear array is more convenient
      * (and efficient) than a grid.
      */
-    private BoardValue[] board = new BoardValue[ BOARD_SIZE * BOARD_SIZE ];
+    private BoardValue[] board;
 
     /**
      * Linear offset for adjacent cells.
@@ -70,10 +71,9 @@ public class Board implements Cloneable, Iterable<Position>
      */
     public Board()
     {
-        for (int i = 0; i < board.length; i++)
-        {
-            board[i] = EMPTY;
-        }
+        board = new BoardValue[ BOARD_LSIZE ];
+
+        Arrays.fill( board, EMPTY );
 
         board[Position.makeLinear( 3, 3 )] = WHITE;
         board[Position.makeLinear( 4, 4 )] = WHITE;
@@ -88,10 +88,7 @@ public class Board implements Cloneable, Iterable<Position>
      */
     public Board( Board other )
     {
-        for (int i = 0; i < board.length; i++)
-        {
-            this.board[i] = other.board[i];
-        }
+        this.board = Arrays.copyOf( other.board, other.board.length );
     }
 
 
@@ -118,15 +115,7 @@ public class Board implements Cloneable, Iterable<Position>
         {
             Board other = (Board) obj;
 
-            for (int i = 0; i < this.board.length; i++)
-            {
-                if (this.board[i] != other.board[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return Arrays.equals( board, other.board );
         }
         catch (Exception e)
         {
