@@ -8,6 +8,7 @@ package ca.provenpath.othello.game;
 
 import android.util.Log;
 
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A computer player.  Automatically determines the optimal move for
@@ -54,11 +56,15 @@ public class ComputerPlayer extends Player
 
         isInterrupted = false;
 
-        MiniMaxResult result = parallelMinimaxAB( board, color, 0 );
+        Stats stats = new Stats();
+        MiniMaxResult result = parallelMinimaxAB( board, color, 0, stats );
 
         Assert.notNull( result.getBestMove() );
 
         Log.i( TAG, "makeMove: " + result.getBestMove() + ", value: " + result.getValue() );
+        long duration = stats.duration();
+        Log.i( TAG, String.format( "parallelMinimaxAB: %d boards evaluated in %d ms. %d boards/sec",
+                        stats.getBoardsEvaluated(), duration, stats.getBoardsEvaluated() * 1000 / duration ) );
 
         board.makeMove( new Move( color, result.getBestMove() ) );
     }
@@ -77,12 +83,14 @@ public class ComputerPlayer extends Player
      * @param board  the board to evaluate
      * @param player the player who's move it is
      * @param depth  the current recursion depth (in half-moves)
+     * @param stats  performance statistics
      * @return the value of board
      */
     private MiniMaxResult parallelMinimaxAB(
             Board board,
             final BoardValue player,
-            final int depth)
+            final int depth,
+            final Stats stats)
     {
         Assert.isTrue( maxDepth > 0 );
 
@@ -106,8 +114,10 @@ public class ComputerPlayer extends Player
                     @Override
                     public MiniMaxResult call() throws Exception
                     {
-                        return new MiniMaxResult( minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, Integer.MIN_VALUE, Integer.MAX_VALUE ).getValue(),
+                        MiniMaxResult result = new MiniMaxResult(
+                                minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, Integer.MIN_VALUE, Integer.MAX_VALUE, stats ).getValue(),
                                 copyOfBoard.getLastMove().getPosition() );
+                        return result;
                     }
                 } );
 
@@ -152,6 +162,7 @@ public class ComputerPlayer extends Player
      * @param depth  the current recursion depth (in half-moves)
      * @param alpha  the alpha maximum
      * @param beta   the beta maximum
+     * @param stats  performance statistics
      * @return the value of board
      */
     private MiniMaxResult minimaxAB(
@@ -159,10 +170,12 @@ public class ComputerPlayer extends Player
             BoardValue player,
             int depth,
             int alpha,
-            int beta )
+            int beta,
+            Stats stats)
     {
         if (depth >= maxDepth || isInterrupted)
         {
+            stats.incBoard();
             return new MiniMaxResult( strategy.determineBoardValue( color, board ) );
         }
 
@@ -185,7 +198,7 @@ public class ComputerPlayer extends Player
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove( m );
 
-                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta ).getValue();
+                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta, stats ).getValue();
                     if (result > value)
                     {
                         value = result;
@@ -213,7 +226,7 @@ public class ComputerPlayer extends Player
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove( m );
 
-                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta ).getValue();
+                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta, stats ).getValue();
                     if (result < value)
                     {
                         value = result;
@@ -233,7 +246,7 @@ public class ComputerPlayer extends Player
 
             if (board.hasValidMove( player.otherPlayer() ))
             {
-                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta ).getValue();
+                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta, stats ).getValue();
             }
             else
             {
@@ -282,6 +295,30 @@ public class ComputerPlayer extends Player
         }
 
         private Position bestMove;
+    }
+
+    /**
+     * Helper for performance statistics.  Thread-safe.
+     */
+    private class Stats
+    {
+        private long start = System.currentTimeMillis();
+        private AtomicInteger boardsEvaluated = new AtomicInteger( 0 );
+
+        public void incBoard()
+        {
+            boardsEvaluated.getAndIncrement();
+        }
+
+        public int getBoardsEvaluated()
+        {
+            return boardsEvaluated.get();
+        }
+
+        public long duration()
+        {
+            return System.currentTimeMillis() - start;
+        }
     }
 
 
