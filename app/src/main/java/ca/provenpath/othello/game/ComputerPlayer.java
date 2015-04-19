@@ -55,7 +55,7 @@ public class ComputerPlayer extends Player
         isInterrupted = false;
 
         Stats stats = new Stats();
-        MiniMaxResult result = false
+        MiniMaxResult result = isParallel()
                 ? parallelMinimaxAB( board, color, 0, stats )
                 : minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE, stats );
 
@@ -378,6 +378,19 @@ public class ComputerPlayer extends Player
         this.strategy = strategy;
     }
 
+    private boolean isParallel = false;
+
+    public void setParallel( boolean isParallel )
+    {
+        this.isParallel = isParallel;
+    }
+
+    public boolean isParallel()
+    {
+        return isParallel;
+    }
 
     private volatile boolean isInterrupted = false;
+
+
 }

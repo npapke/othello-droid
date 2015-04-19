@@ -1,6 +1,7 @@
 package ca.provenpath.othello;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -31,6 +32,7 @@ import ca.provenpath.othello.game.GameExecutorSerializer;
 import ca.provenpath.othello.game.HumanPlayer;
 import ca.provenpath.othello.game.Move;
 import ca.provenpath.othello.game.Position;
+import ca.provenpath.othello.game.StrategyFactory;
 import ca.provenpath.othello.game.observer.GameState;
 
 
@@ -290,6 +292,8 @@ public class MainActivity extends ActionBarActivity
 
                     while (executor.getState() != GameState.GAME_OVER)
                     {
+                        applyPreferences( executor );
+
                         executor.executeOneTurn();
                         try
                         {
@@ -303,6 +307,24 @@ public class MainActivity extends ActionBarActivity
                     }
                 }
             }.start();
+        }
+    }
+
+    private void applyPreferences( GameExecutor executor )
+    {
+        ComputerPlayer cplayer = (ComputerPlayer) executor.getPlayer( mComputerPlayer );
+
+        SharedPreferences prefs =PreferenceManager.getDefaultSharedPreferences(this);
+
+        try
+        {
+            cplayer.setMaxDepth( Integer.parseInt( prefs.getString( SettingsFragment.KEY_LOOKAHEAD, "4" ) ) );
+            cplayer.setParallel( prefs.getBoolean( SettingsFragment.KEY_PARALLEL, false ) );
+            cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( SettingsFragment.KEY_STRATEGY, "" ) ) );
+        }
+        catch (Exception e)
+        {
+            Log.w( TAG, "Cannot apply preferences", e);
         }
     }
 

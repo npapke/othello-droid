@@ -5,10 +5,12 @@ import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 
-public class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener
+public class SettingsFragment extends PreferenceFragment
+    implements SharedPreferences.OnSharedPreferenceChangeListener
 {
     public final static String KEY_STRATEGY = "pref_strategy";
     public final static String KEY_LOOKAHEAD = "pref_lookahead";
+    public final static String KEY_PARALLEL = "pref_parallel";
 
     @Override
     public void onCreate( Bundle savedInstanceState )
@@ -20,18 +22,6 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
 
         getPreferenceScreen().getSharedPreferences()
                 .registerOnSharedPreferenceChangeListener( this );
-    }
-
-    @Override
-    public void onSharedPreferenceChanged( SharedPreferences sharedPreferences, String key )
-    {
-        if (key.equals( KEY_STRATEGY ) || key.equals( KEY_LOOKAHEAD ))
-        {
-            Preference pref = findPreference( key );
-
-            // Set summary to be the user-description for the selected value
-            pref.setSummary( sharedPreferences.getString( key, "" ) );
-        }
     }
 
     @Override
@@ -49,5 +39,18 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         getPreferenceScreen().getSharedPreferences()
                 .unregisterOnSharedPreferenceChangeListener( this );
     }
+
+    @Override
+    public void onSharedPreferenceChanged( SharedPreferences sharedPreferences, String key )
+    {
+        if (key.equals( KEY_STRATEGY ) || key.equals( KEY_LOOKAHEAD ))
+        {
+            Preference pref = findPreference( key );
+
+            // Set summary to be the user-description for the selected value
+            pref.setSummary( sharedPreferences.getString( key, "" ) );
+        }
+    }
+
 }
 
