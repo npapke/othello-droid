@@ -1,9 +1,11 @@
 package ca.provenpath.othello;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -50,6 +52,8 @@ public class MainActivity extends ActionBarActivity
         Log.i(TAG, "onCreate");
 
         super.onCreate( savedInstanceState );
+
+        PreferenceManager.setDefaultValues( this, R.xml.preferences, false );
 
         if (savedInstanceState != null)
         {
@@ -203,6 +207,8 @@ public class MainActivity extends ActionBarActivity
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings)
         {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 
