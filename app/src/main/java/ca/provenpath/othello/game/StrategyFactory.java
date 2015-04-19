@@ -1,6 +1,7 @@
 package ca.provenpath.othello.game;
 
 /**
+ * A Strategy that simply optimizes the number of own pieces.
  * Created by npapke on 4/19/15.
  */
 public class StrategyFactory
@@ -12,8 +13,12 @@ public class StrategyFactory
             case "adaptive":
                 return new AdaptiveStrategy();
 
+            case "greedy":
+                return new GreedyStrategy();
+
+            case "static":
             default:
-                return new Strategy();
+                return new StaticStrategy();
         }
     }
 }

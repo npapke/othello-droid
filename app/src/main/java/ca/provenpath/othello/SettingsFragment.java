@@ -20,8 +20,12 @@ public class SettingsFragment extends PreferenceFragment
         // Load the preferences from an XML resource
         addPreferencesFromResource( R.xml.preferences );
 
-        getPreferenceScreen().getSharedPreferences()
-                .registerOnSharedPreferenceChangeListener( this );
+        SharedPreferences prefs = getPreferenceScreen().getSharedPreferences();
+
+        onSharedPreferenceChanged( prefs, KEY_STRATEGY );
+        onSharedPreferenceChanged( prefs, KEY_LOOKAHEAD );
+
+        prefs.registerOnSharedPreferenceChangeListener( this );
     }
 
     @Override
