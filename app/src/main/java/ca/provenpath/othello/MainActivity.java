@@ -1,5 +1,6 @@
 package ca.provenpath.othello;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -50,7 +51,7 @@ public class MainActivity extends ActionBarActivity
 
         super.onCreate( savedInstanceState );
 
-        PreferenceManager.setDefaultValues( this, R.xml.player_preferences, false );
+        PreferenceManager.setDefaultValues( this, R.xml.preferences, false );
 
         if (savedInstanceState != null)
         {
@@ -307,15 +308,31 @@ public class MainActivity extends ActionBarActivity
 
     private void applyPreferences( GameExecutor executor )
     {
-        ComputerPlayer cplayer = (ComputerPlayer) executor.getPlayer( mComputerPlayer );
-
-        SharedPreferences prefs =PreferenceManager.getDefaultSharedPreferences(this);
-
+        applyPreferences( executor, BoardValue.BLACK, 0 );
+        applyPreferences( executor, BoardValue.WHITE, 1 );
+    }
+    private void applyPreferences( GameExecutor executor, BoardValue color, int index )
+    {
         try
         {
-            cplayer.setMaxDepth( Integer.parseInt( prefs.getString( PlayerSettingsFragment.KEY_LOOKAHEAD, "4" ) ) );
-            cplayer.setParallel( prefs.getBoolean( PlayerSettingsFragment.KEY_PARALLEL, false ) );
-            cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( PlayerSettingsFragment.KEY_STRATEGY, "" ) ) );
+            SharedPreferences prefs = getSharedPreferences(
+                    PlayerSettingsFragment.getSharedPreferencesName( color.name() ),
+                    Context.MODE_PRIVATE );
+
+            if ( prefs.getBoolean( PlayerSettingsFragment.KEY_ISCOMPUTER, false ) )
+            {
+                ComputerPlayer cplayer = new ComputerPlayer( color );
+
+                cplayer.setMaxDepth( Integer.parseInt( prefs.getString( PlayerSettingsFragment.KEY_LOOKAHEAD, "4" ) ) );
+                cplayer.setParallel( prefs.getBoolean( PlayerSettingsFragment.KEY_PARALLEL, false ) );
+                cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( PlayerSettingsFragment.KEY_STRATEGY, "" ) ) );
+
+                executor.setPlayer( index, cplayer );
+            }
+            else
+            {
+                executor.setPlayer( index, new HumanPlayer( color ) );
+            }
         }
         catch (Exception e)
         {

@@ -14,6 +14,7 @@ public class PlayerSettingsFragment extends PreferenceFragment
 {
     public final static String TAG = PlayerSettingsFragment.class.getName();
 
+    public final static String KEY_ISCOMPUTER = "pref_iscomputer";
     public final static String KEY_STRATEGY = "pref_strategy";
     public final static String KEY_LOOKAHEAD = "pref_lookahead";
     public final static String KEY_PARALLEL = "pref_parallel";
@@ -27,7 +28,7 @@ public class PlayerSettingsFragment extends PreferenceFragment
 
         Log.i( TAG, "Player color: " + playerColor );
 
-        getPreferenceManager().setSharedPreferencesName( playerColor );
+        getPreferenceManager().setSharedPreferencesName( getSharedPreferencesName( playerColor ) );
 
         // Load the player_preferences from an XML resource
         addPreferencesFromResource( R.xml.player_preferences );
@@ -67,6 +68,11 @@ public class PlayerSettingsFragment extends PreferenceFragment
             // Set summary to be the user-description for the selected value
             pref.setSummary( sharedPreferences.getString( key, "" ) );
         }
+    }
+
+    public static String getSharedPreferencesName( String player )
+    {
+        return player + "_prefs";
     }
 }
 
