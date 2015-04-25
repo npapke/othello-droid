@@ -15,14 +15,9 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.google.gson.Gson;
 
 import java.util.Observable;
 import java.util.Observer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
@@ -55,7 +50,7 @@ public class MainActivity extends ActionBarActivity
 
         super.onCreate( savedInstanceState );
 
-        PreferenceManager.setDefaultValues( this, R.xml.preferences, false );
+        PreferenceManager.setDefaultValues( this, R.xml.player_preferences, false );
 
         if (savedInstanceState != null)
         {
@@ -318,9 +313,9 @@ public class MainActivity extends ActionBarActivity
 
         try
         {
-            cplayer.setMaxDepth( Integer.parseInt( prefs.getString( SettingsFragment.KEY_LOOKAHEAD, "4" ) ) );
-            cplayer.setParallel( prefs.getBoolean( SettingsFragment.KEY_PARALLEL, false ) );
-            cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( SettingsFragment.KEY_STRATEGY, "" ) ) );
+            cplayer.setMaxDepth( Integer.parseInt( prefs.getString( PlayerSettingsFragment.KEY_LOOKAHEAD, "4" ) ) );
+            cplayer.setParallel( prefs.getBoolean( PlayerSettingsFragment.KEY_PARALLEL, false ) );
+            cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( PlayerSettingsFragment.KEY_STRATEGY, "" ) ) );
         }
         catch (Exception e)
         {

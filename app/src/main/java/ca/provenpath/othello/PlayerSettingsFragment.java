@@ -4,10 +4,16 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
+import android.util.Log;
 
-public class SettingsFragment extends PreferenceFragment
+import ca.provenpath.othello.game.BoardValue;
+import ca.provenpath.othello.game.Player;
+
+public class PlayerSettingsFragment extends PreferenceFragment
     implements SharedPreferences.OnSharedPreferenceChangeListener
 {
+    public final static String TAG = PlayerSettingsFragment.class.getName();
+
     public final static String KEY_STRATEGY = "pref_strategy";
     public final static String KEY_LOOKAHEAD = "pref_lookahead";
     public final static String KEY_PARALLEL = "pref_parallel";
@@ -17,11 +23,18 @@ public class SettingsFragment extends PreferenceFragment
     {
         super.onCreate( savedInstanceState );
 
-        // Load the preferences from an XML resource
-        addPreferencesFromResource( R.xml.preferences );
+        String playerColor = getArguments().getString( "player" );
+
+        Log.i( TAG, "Player color: " + playerColor );
+
+        getPreferenceManager().setSharedPreferencesName( playerColor );
+
+        // Load the player_preferences from an XML resource
+        addPreferencesFromResource( R.xml.player_preferences );
 
         SharedPreferences prefs = getPreferenceScreen().getSharedPreferences();
 
+        // Display current values
         onSharedPreferenceChanged( prefs, KEY_STRATEGY );
         onSharedPreferenceChanged( prefs, KEY_LOOKAHEAD );
 
@@ -55,6 +68,5 @@ public class SettingsFragment extends PreferenceFragment
             pref.setSummary( sharedPreferences.getString( key, "" ) );
         }
     }
-
 }
 

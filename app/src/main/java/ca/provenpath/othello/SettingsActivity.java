@@ -2,20 +2,27 @@ package ca.provenpath.othello;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.preference.PreferenceActivity;
+import android.util.Log;
+
+import java.util.List;
 
 /**
  * Created by npapke on 4/19/15.
  */
-public class SettingsActivity extends Activity
+public class SettingsActivity extends PreferenceActivity
 {
-    @Override
-    protected void onCreate( Bundle savedInstanceState )
-    {
-        super.onCreate( savedInstanceState );
+    public final static String TAG = SettingsActivity.class.getName();
 
-        // Display the fragment as the main content.
-        getFragmentManager().beginTransaction()
-                .replace( android.R.id.content, new SettingsFragment() )
-                .commit();
+    @Override
+    public void onBuildHeaders(List<Header> target)
+    {
+        loadHeadersFromResource( R.xml.preference_headers, target );
+    }
+
+    @Override
+    protected boolean isValidFragment( String fragmentName )
+    {
+        return "ca.provenpath.othello.PlayerSettingsFragment".equals( fragmentName );
     }
 }
