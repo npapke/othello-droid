@@ -39,6 +39,11 @@ public class ComputerPlayer extends Player
         super( serial );
     }
 
+    public boolean isComputer()
+    {
+        return true;
+    }
+
     /**
      * Make a move on the board.
      *
@@ -64,7 +69,8 @@ public class ComputerPlayer extends Player
         Log.i( TAG, "makeMove: " + result.getBestMove() + ", value: " + result.getValue() );
         long duration = stats.duration();
         Log.i( TAG, String.format( "%d boards evaluated in %d ms. %d boards/sec",
-                stats.getBoardsEvaluated(), duration, stats.getBoardsEvaluated() * 1000 / duration ) );
+                stats.getBoardsEvaluated(), duration,
+                duration != 0 ? stats.getBoardsEvaluated() * 1000 / duration : 999999 ) );
 
         board.makeMove( new Move( color, result.getBestMove() ) );
     }

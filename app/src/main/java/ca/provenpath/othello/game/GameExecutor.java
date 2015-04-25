@@ -109,6 +109,22 @@ public class GameExecutor extends Observable
         }
     }
 
+    /**
+     * Gets the player that will make the next move.
+     */
+    public Player getNextPlayer()
+    {
+        switch (state)
+        {
+            case TURN_PLAYER_0:
+                return player[0];
+            case TURN_PLAYER_1:
+                return player[1];
+            default:
+                return null;
+        }
+    }
+
 
     //
     // ------------ Bean Pattern ------------
@@ -175,6 +191,9 @@ public class GameExecutor extends Observable
      */
     public void setPlayer( int index, Player newPlayer )
     {
+        if (this.player[index] != null)
+            this.player[index].interruptMove();
+
         this.player[index] = newPlayer;
     }
 

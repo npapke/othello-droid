@@ -27,6 +27,7 @@ import ca.provenpath.othello.game.GameExecutor;
 import ca.provenpath.othello.game.GameExecutorSerializer;
 import ca.provenpath.othello.game.HumanPlayer;
 import ca.provenpath.othello.game.Move;
+import ca.provenpath.othello.game.Player;
 import ca.provenpath.othello.game.Position;
 import ca.provenpath.othello.game.StrategyFactory;
 import ca.provenpath.othello.game.observer.GameState;
@@ -357,33 +358,39 @@ public class MainActivity extends ActionBarActivity
         {
             StringBuilder buf = new StringBuilder();
 
-            int humanScore = mExecutor.getBoard().countBoardValues( BoardValue.BLACK );
-            int computerScore = mExecutor.getBoard().countBoardValues( BoardValue.WHITE );
+            int blackScore = mExecutor.getBoard().countBoardValues( BoardValue.BLACK );
+            int whiteScore = mExecutor.getBoard().countBoardValues( BoardValue.WHITE );
 
-            buf.append( String.format( "%d remaining, score %d - %d.",
+            buf.append( String.format( "%d remaining, score %d - %d.\n",
                     61 - mExecutor.getMoveNumber(),
-                    humanScore,
-                    computerScore ) );
+                    blackScore,
+                    whiteScore ) );
+
+            Player player = mExecutor.getNextPlayer();
 
             switch (mExecutor.getState())
             {
                 case TURN_PLAYER_0:
-                    buf.append( "  Your turn." );
-                    break;
-
                 case TURN_PLAYER_1:
-                    buf.append( "  Processing." );
+                    if (player.isComputer())
+                    {
+                        buf.append( "Processing for " + player.getColor().name() );
+                    }
+                    else
+                    {
+                        buf.append( "Your turn." );
+                    }
                     break;
 
                 case GAME_OVER:
                 {
                     // Toast.makeText( MainActivity.this, "Game over", Toast.LENGTH_SHORT ).show();
-                    if (humanScore > computerScore)
-                        buf.append( "  You WIN!" );
-                    else if (humanScore < computerScore)
-                        buf.append( "  Game over.  You did not win." );
+                    if (blackScore > whiteScore)
+                        buf.append( "BLACK wins" );
+                    else if (blackScore < whiteScore)
+                        buf.append( "WHITE wins" );
                     else
-                        buf.append( "  Tied game." );
+                        buf.append( "Tied game." );
                     break;
                 }
             }
@@ -397,10 +404,11 @@ public class MainActivity extends ActionBarActivity
     private void showValidMoves()
     {
         // Only for human player
-        if ((mExecutor.getState() == GameState.TURN_PLAYER_0) && (mHumanPlayer == 0))
+        Player player = mExecutor.getNextPlayer();
+        if ((player != null) && !player.isComputer())
         {
             Board boardWithValid = (Board) mExecutor.getBoard().clone();
-            boardWithValid.determineValidMoves( mExecutor.getPlayer( mHumanPlayer ).getColor() );
+            boardWithValid.determineValidMoves( player.getColor() );
 
             mBoardAdaptor.redraw( boardWithValid );
         }
@@ -410,8 +418,8 @@ public class MainActivity extends ActionBarActivity
     {
         if (mExecutor != null)
         {
-            HumanPlayer human = (HumanPlayer) mExecutor.getPlayer( mHumanPlayer );
-            if (human != null)
+            Player human = mExecutor.getNextPlayer();
+            if ((human != null) && !human.isComputer())
             {
                 // FIXME this breaks encapsulation.  Probably should have the game executor
                 // track undo moves.
@@ -420,7 +428,7 @@ public class MainActivity extends ActionBarActivity
                     mLastMoveExecutorSerial = GameExecutorSerializer.serialize( mExecutor );
                 }
 
-                human.attemptMove( position );
+                ((HumanPlayer) human).attemptMove( position );
             }
         }
     }

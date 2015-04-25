@@ -67,4 +67,9 @@ public class Player
         
         this.color = color;
     }
+
+    public boolean isComputer()
+    {
+        return false;
+    }
 }
