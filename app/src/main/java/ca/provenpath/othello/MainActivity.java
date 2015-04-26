@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.Executor;
 
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
@@ -48,7 +49,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onCreate( Bundle savedInstanceState )
     {
-        Log.i(TAG, "onCreate");
+        Log.i( TAG, "onCreate" );
 
         super.onCreate( savedInstanceState );
 
@@ -119,11 +120,7 @@ public class MainActivity extends ActionBarActivity
                 switch (msg.what)
                 {
                     case MSG_REDRAW:
-                        updateDisplay();
-                        break;
-
-                    case MSG_SHOWVALID:
-                        showValidMoves();
+                        updateDisplay( GameExecutorSerializer.deserialize( (String) msg.obj ) );
                         break;
 
                     default:
@@ -149,7 +146,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onDestroy()
     {
-        Log.i(TAG, "onDestroy");
+        Log.i( TAG, "onDestroy" );
 
         if (mExecutor != null)
             mExecutor.endGame();
@@ -160,7 +157,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onSaveInstanceState( Bundle bundle )
     {
-        Log.i(TAG, "onSaveInstanceState");
+        Log.i( TAG, "onSaveInstanceState" );
 
         super.onSaveInstanceState( bundle );
 
@@ -174,7 +171,7 @@ public class MainActivity extends ActionBarActivity
     @Override
     protected void onRestoreInstanceState( Bundle bundle )
     {
-        Log.i(TAG, "onSaveInstanceState");
+        Log.i( TAG, "onSaveInstanceState" );
 
         super.onRestoreInstanceState( bundle );
     }
@@ -206,8 +203,8 @@ public class MainActivity extends ActionBarActivity
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings)
         {
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
+            Intent intent = new Intent( this, SettingsActivity.class );
+            startActivity( intent );
             return true;
         }
 
@@ -268,39 +265,50 @@ public class MainActivity extends ActionBarActivity
 
     private void runExecutor( final GameExecutor executor )
     {
+
         if (executor != null)
         {
-            executor.addObserver( new Observer()
-            {
-                @Override
-                public void update( Observable observable, Object data )
-                {
-                    // Send redraw request to UI thread.
-                    mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
-                }
-            } );
-
             new Thread()
             {
+                private long noDisplayUpdateBefore = 0;
+
                 @Override
                 public void run()
                 {
-                    mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
+                    executor.addObserver( new Observer()
+                    {
+                        @Override
+                        public void update( Observable observable, Object data )
+                        {
+                            try
+                            {
+                                Thread.sleep( Math.max( 0, noDisplayUpdateBefore - System.currentTimeMillis() ) );
+                            }
+                            catch (InterruptedException e)
+                            {
+                            }
+
+                            // Send redraw request to UI thread.
+                            Message msg = mHandler.obtainMessage( MSG_REDRAW );
+                            msg.obj = GameExecutorSerializer.serialize((GameExecutor) data);
+                            msg.sendToTarget();
+                        }
+                    } );
+
+                    // Send redraw request to UI thread.
+                    Message msg = mHandler.obtainMessage( MSG_REDRAW );
+                    msg.obj = GameExecutorSerializer.serialize( executor );
+                    msg.sendToTarget();
 
                     while (executor.getState() != GameState.GAME_OVER)
                     {
                         applyPreferences( executor );
 
+                        // This is to provide a visible pause for fast computer moves.
+                        long delay = 2000;
+                        noDisplayUpdateBefore = System.currentTimeMillis() + delay;
+
                         executor.executeOneTurn();
-                        try
-                        {
-                            // This is to provide a visible pause for fast computer moves.
-                            Thread.sleep( 500, 0 );
-                            mHandler.obtainMessage( MSG_SHOWVALID ).sendToTarget();
-                        }
-                        catch (InterruptedException e)
-                        {
-                        }
                     }
                 }
             }.start();
@@ -312,6 +320,7 @@ public class MainActivity extends ActionBarActivity
         applyPreferences( executor, BoardValue.BLACK, 0 );
         applyPreferences( executor, BoardValue.WHITE, 1 );
     }
+
     private void applyPreferences( GameExecutor executor, BoardValue color, int index )
     {
         try
@@ -320,7 +329,7 @@ public class MainActivity extends ActionBarActivity
                     PlayerSettingsFragment.getSharedPreferencesName( color.name() ),
                     Context.MODE_PRIVATE );
 
-            if ( prefs.getBoolean( PlayerSettingsFragment.KEY_ISCOMPUTER, false ) )
+            if (prefs.getBoolean( PlayerSettingsFragment.KEY_ISCOMPUTER, false ))
             {
                 ComputerPlayer cplayer = new ComputerPlayer( color );
 
@@ -337,18 +346,18 @@ public class MainActivity extends ActionBarActivity
         }
         catch (Exception e)
         {
-            Log.w( TAG, "Cannot apply preferences", e);
+            Log.w( TAG, "Cannot apply preferences", e );
         }
     }
 
-    private void updateDisplay()
+    private void updateDisplay( GameExecutor executor )
     {
         // TODO make this translatable
         TextView messageView = (TextView) findViewById( R.id.message );
 
         findViewById( R.id.undo ).setEnabled( mLastMoveExecutorSerial != null );
 
-        if (mExecutor == null)
+        if (executor == null)
         {
             messageView.setText( "Select 'New Game' to start" );
 
@@ -358,17 +367,17 @@ public class MainActivity extends ActionBarActivity
         {
             StringBuilder buf = new StringBuilder();
 
-            int blackScore = mExecutor.getBoard().countBoardValues( BoardValue.BLACK );
-            int whiteScore = mExecutor.getBoard().countBoardValues( BoardValue.WHITE );
+            int blackScore = executor.getBoard().countBoardValues( BoardValue.BLACK );
+            int whiteScore = executor.getBoard().countBoardValues( BoardValue.WHITE );
 
             buf.append( String.format( "%d remaining, score %d - %d.\n",
                     61 - mExecutor.getMoveNumber(),
                     blackScore,
                     whiteScore ) );
 
-            Player player = mExecutor.getNextPlayer();
+            Player player = executor.getNextPlayer();
 
-            switch (mExecutor.getState())
+            switch (executor.getState())
             {
                 case TURN_PLAYER_0:
                 case TURN_PLAYER_1:
@@ -397,20 +406,24 @@ public class MainActivity extends ActionBarActivity
 
             messageView.setText( buf.toString() );
 
-            mBoardAdaptor.redraw( mExecutor.getBoard() );
+            showValidMoves( executor );
         }
     }
 
-    private void showValidMoves()
+    private void showValidMoves( GameExecutor executor )
     {
         // Only for human player
-        Player player = mExecutor.getNextPlayer();
+        Player player = executor.getNextPlayer();
         if ((player != null) && !player.isComputer())
         {
             Board boardWithValid = (Board) mExecutor.getBoard().clone();
             boardWithValid.determineValidMoves( player.getColor() );
 
             mBoardAdaptor.redraw( boardWithValid );
+        }
+        else
+        {
+            mBoardAdaptor.redraw( executor.getBoard() );
         }
     }
 
@@ -423,7 +436,7 @@ public class MainActivity extends ActionBarActivity
             {
                 // FIXME this breaks encapsulation.  Probably should have the game executor
                 // track undo moves.
-                if (mExecutor.getBoard().isValidMove( new Move( human.getColor(), new Position( position )  ) ))
+                if (mExecutor.getBoard().isValidMove( new Move( human.getColor(), new Position( position ) ) ))
                 {
                     mLastMoveExecutorSerial = GameExecutorSerializer.serialize( mExecutor );
                 }
@@ -446,7 +459,6 @@ public class MainActivity extends ActionBarActivity
             }
         }
     }
-
 
 
     private final static int MSG_REDRAW = 341;

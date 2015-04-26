@@ -10,6 +10,7 @@ import android.util.Log;
 import ca.provenpath.othello.game.observer.GameState;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Observable;
 
 /**
@@ -32,7 +33,7 @@ public class GameExecutor extends Observable
         state = GameState.TURN_PLAYER_0;
 
         setChanged();
-        notifyObservers();
+        notifyObservers( this );
     }
 
     public void endGame()
@@ -45,7 +46,7 @@ public class GameExecutor extends Observable
         state = GameState.GAME_OVER;
 
         setChanged();
-        notifyObservers();
+        notifyObservers( this );
     }
 
 
@@ -94,7 +95,7 @@ public class GameExecutor extends Observable
         }
 
         setChanged();
-        notifyObservers();
+        notifyObservers( this );
     }
 
     /**
@@ -124,7 +125,6 @@ public class GameExecutor extends Observable
                 return null;
         }
     }
-
 
     //
     // ------------ Bean Pattern ------------

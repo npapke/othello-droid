@@ -89,6 +89,7 @@ public class Board implements Cloneable, Iterable<Position>
     public Board( Board other )
     {
         this.board = Arrays.copyOf( other.board, other.board.length );
+        this.lastMove = other.lastMove;
     }
 
 

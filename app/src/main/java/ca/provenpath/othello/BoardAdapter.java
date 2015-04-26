@@ -71,7 +71,7 @@ public class BoardAdapter extends BaseAdapter
             imageView = new ImageView( mContext );
 
             // TODO determine size dynamically
-            int size =  110; // Math.min( parent.getHeight(), parent.getWidth() ) / 8;
+            int size = 110; // Math.min( parent.getHeight(), parent.getWidth() ) / 8;
 
             Log.d( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
 
@@ -88,19 +88,54 @@ public class BoardAdapter extends BaseAdapter
         mBoardImages[position] = imageView;
 
         BoardValue bv = mBoard.getLvalue( position );
-        boolean isAnimated = ! bv.equals( mOldBoard.getLvalue( position ) )
-                && ((bv == BoardValue.BLACK) || (bv == BoardValue.WHITE));
+        boolean isAnimated = !bv.equals( mOldBoard.getLvalue( position ) );
 
-        if ( isAnimated )
+        if (isAnimated)
         {
-            // "Expand" animation for changed tiles
-            ObjectAnimator animatorX = ObjectAnimator.ofFloat( imageView, "scaleX", 0f, 1f );
-            animatorX.setDuration( 250 );
-            animatorX.start();
+            imageView.setBackgroundResource( resourceForCell( mOldBoard.getLvalue( position ) ) );
 
-            ObjectAnimator animatorY = ObjectAnimator.ofFloat( imageView, "scaleY", 0f, 1f );
-            animatorY.setDuration( 250 );
-            animatorY.start();
+            switch (bv)
+            {
+                case BLACK:
+                case WHITE:
+                {
+                    // "Fade in" animation for changed tiles
+                    imageView.setImageAlpha( 0 );
+                    ObjectAnimator animatorAlpha = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
+
+                    boolean isLastMove = (mBoard.getLastMove() != null) && (position == mBoard.getLastMove().getPosition().getLinear());
+                    if (isLastMove)
+                    {
+                        animatorAlpha.setDuration( 250 );
+                        animatorAlpha.setRepeatCount( 4 );
+                        animatorAlpha.setRepeatMode( ObjectAnimator.REVERSE );
+                    }
+                    else
+                    {
+                        animatorAlpha.setStartDelay( 500 );
+                        animatorAlpha.setDuration( 750 );
+                    }
+
+                    animatorAlpha.start();
+
+                    break;
+                }
+
+                case VALID_BLACK:
+                case VALID_WHITE:
+                {
+                    // "Fade in" animation for changed tiles
+                    imageView.setImageAlpha( 0 );
+                    ObjectAnimator animatorAlpha = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
+
+                    animatorAlpha.setDuration( 100 );
+                    animatorAlpha.setStartDelay( 1500 );
+
+                    animatorAlpha.start();
+
+                    break;
+                }
+            }
         }
 
         return imageView;
