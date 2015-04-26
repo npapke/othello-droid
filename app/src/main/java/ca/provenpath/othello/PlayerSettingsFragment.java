@@ -14,6 +14,7 @@ public class PlayerSettingsFragment extends PreferenceFragment
 {
     public final static String TAG = PlayerSettingsFragment.class.getName();
 
+    public final static String KEY_CATEGORY = "pref_category";
     public final static String KEY_ISCOMPUTER = "pref_iscomputer";
     public final static String KEY_STRATEGY = "pref_strategy";
     public final static String KEY_LOOKAHEAD = "pref_lookahead";
@@ -34,8 +35,10 @@ public class PlayerSettingsFragment extends PreferenceFragment
         addPreferencesFromResource( R.xml.player_preferences );
 
         SharedPreferences prefs = getPreferenceScreen().getSharedPreferences();
+        findPreference( KEY_CATEGORY ).setTitle( playerColor );
 
         // Display current values
+        onSharedPreferenceChanged( prefs, KEY_CATEGORY );
         onSharedPreferenceChanged( prefs, KEY_STRATEGY );
         onSharedPreferenceChanged( prefs, KEY_LOOKAHEAD );
 
@@ -61,10 +64,10 @@ public class PlayerSettingsFragment extends PreferenceFragment
     @Override
     public void onSharedPreferenceChanged( SharedPreferences sharedPreferences, String key )
     {
+        Preference pref = findPreference( key );
+
         if (key.equals( KEY_STRATEGY ) || key.equals( KEY_LOOKAHEAD ))
         {
-            Preference pref = findPreference( key );
-
             // Set summary to be the user-description for the selected value
             pref.setSummary( sharedPreferences.getString( key, "" ) );
         }
