@@ -38,8 +38,11 @@ public class GameExecutorSerializer
 
             GameExecutor ge = deserializer.fromJson( serial, GameExecutor.class );
 
-            // Rehydrated observers are stale
-            ge.deleteObservers();
+            if (ge != null)
+            {
+                // Rehydrated observers are stale
+                ge.deleteObservers();
+            }
 
             return ge;
         }

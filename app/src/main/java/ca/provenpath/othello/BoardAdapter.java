@@ -92,13 +92,13 @@ public class BoardAdapter extends BaseAdapter
 
         if (isAnimated)
         {
-            imageView.setBackgroundResource( resourceForCell( mOldBoard.getLvalue( position ) ) );
-
             switch (bv)
             {
                 case BLACK:
                 case WHITE:
                 {
+                    imageView.setBackgroundResource( resourceForCell( mOldBoard.getLvalue( position ) ) );
+
                     // "Fade in" animation for changed tiles
                     imageView.setImageAlpha( 0 );
                     ObjectAnimator animatorAlpha = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
@@ -124,6 +124,8 @@ public class BoardAdapter extends BaseAdapter
                 case VALID_BLACK:
                 case VALID_WHITE:
                 {
+                    imageView.setBackgroundResource( resourceForCell( BoardValue.EMPTY ) );
+
                     // "Fade in" animation for changed tiles
                     imageView.setImageAlpha( 0 );
                     ObjectAnimator animatorAlpha = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
