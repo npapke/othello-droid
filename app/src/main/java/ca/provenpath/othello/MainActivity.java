@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -205,6 +206,11 @@ public class MainActivity extends ActionBarActivity
         {
             Intent intent = new Intent( this, SettingsActivity.class );
             startActivity( intent );
+            return true;
+        }
+        else if (id == R.id.action_about)
+        {
+            new AboutDialog().show( getFragmentManager(), null );
             return true;
         }
 
