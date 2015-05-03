@@ -19,4 +19,7 @@
     <string name="action_about">About</string>
     <string name="about_title">About Othello</string>
     <string name="about_text">The board game Othello also known as Reversi.</string>
+    <string name="action_help">Help</string>
+    <string name="help_url">https://en.wikipedia.org/wiki/Reversi</string>
+
 </resources>

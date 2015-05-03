@@ -3,12 +3,12 @@ package ca.provenpath.othello;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -20,7 +20,6 @@ import android.widget.TextView;
 
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.Executor;
 
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
@@ -213,6 +212,24 @@ public class MainActivity extends ActionBarActivity
             new AboutDialog().show( getFragmentManager(), null );
             return true;
         }
+        else if (id == R.id.action_help)
+        {
+            // Cheat by sending user off to a web site
+            Intent helpIntent = new Intent();
+            helpIntent.setAction( Intent.ACTION_VIEW );
+            helpIntent.setData( Uri.parse( getResources().getString( R.string.help_url ) ) );
+
+            // Verify that the intent will resolve to an activity
+            if (helpIntent.resolveActivity( getPackageManager() ) != null)
+            {
+                startActivity( helpIntent );
+                return true;
+            }
+            else
+            {
+                Log.w( TAG, "No takers for intent: " + getResources().getText( R.string.help_url ) );
+            }
+        }
 
         return super.onOptionsItemSelected( item );
     }
@@ -296,7 +313,7 @@ public class MainActivity extends ActionBarActivity
 
                             // Send redraw request to UI thread.
                             Message msg = mHandler.obtainMessage( MSG_REDRAW );
-                            msg.obj = GameExecutorSerializer.serialize((GameExecutor) data);
+                            msg.obj = GameExecutorSerializer.serialize( (GameExecutor) data );
                             msg.sendToTarget();
                         }
                     } );
