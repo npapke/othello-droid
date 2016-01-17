@@ -249,6 +249,10 @@ public class MainActivity extends ActionBarActivity
                 Log.w( TAG, "No takers for intent: " + getResources().getText( R.string.help_url ) );
             }
         }
+        else if (id == R.id.action_exit)
+        {
+            finish();
+        }
 
         return super.onOptionsItemSelected( item );
     }
