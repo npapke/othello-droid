@@ -429,7 +429,7 @@ public class MainActivity extends ActionBarActivity
                     }
                     else
                     {
-                        buf.append( "Your turn." );
+                        buf.append( player.getColor().name() + ", your turn." );
                     }
                     break;
 

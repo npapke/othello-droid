@@ -20,6 +20,14 @@
 package ca.provenpath.othello.game;
 
 /**
+ * A strategy that considers multiple board characterizations:
+ * <ul>
+ *     <li>score</li>
+ *     <li>number of valid moves</li>
+ *     <li>how difficult to flip pieces are</li>
+ * </ul>
+ * The weight of these characterizations changes through the course of the game.
+ *
  * Created by npapke on 3/30/15.
  */
 public class AdaptiveStrategy extends Strategy
@@ -42,13 +50,13 @@ public class AdaptiveStrategy extends Strategy
             {
                 score++;
                 numMoves++;
-                protectedScore += board.countProtected( pos );
+                protectedScore += calcProtectedScore( board.countProtected( pos ));
             }
             else if (curCell == otherPlayer)
             {
                 score--;
                 numMoves++;
-                protectedScore -= board.countProtected( pos );
+                protectedScore -= calcProtectedScore( board.countProtected( pos ));
             }
             else if (board.isValidMove( new Move( player, pos ) ))
             {
@@ -60,11 +68,11 @@ public class AdaptiveStrategy extends Strategy
 
         freedom = scale( freedom, 0, 16 );
         score = scale( score, -64, 64 );
-        protectedScore = scale( protectedScore, -128, 128 );  // max range is [-256,256]
+        protectedScore = scale( protectedScore, -512, 512 );
 
-        if (numMoves < 12)
+        if (numMoves < 16)
         {
-            finalScore = (freedom * 30) + (protectedScore * 70) + (score * 0);
+            finalScore = (freedom * 30) + (protectedScore * 60) + (score * 10);
         }
         else if (numMoves < 50)
         {
@@ -78,10 +86,27 @@ public class AdaptiveStrategy extends Strategy
         return finalScore;
     }
 
+    /**
+     * Scales input value to [0,100].  input value is considered to be in [min,max].
+     * @param value input value
+     * @param min lower bound for value
+     * @param max upper bound for value
+     * @return scaled value
+     */
     private int scale( int value, int min, int max )
     {
         int clipped = Math.min( Math.max( value, min ), max );
 
         return (clipped - min) * 100 / max;
+    }
+
+    /**
+     * Scores a protected cell count
+     * @param count protected axis count
+     * @return
+     */
+    private int calcProtectedScore( int count )
+    {
+        return 1 << count;
     }
 }
