@@ -50,26 +50,31 @@ public class GameExecutorSerializer
 
     public static GameExecutor deserialize( String serial )
     {
+        GameExecutor executor = null;
+
         try
         {
             Gson deserializer = new GameExecutorSerializer().makeGson();
             Log.d( TAG, "serialized=" + serial );
 
-            GameExecutor ge = deserializer.fromJson( serial, GameExecutor.class );
-
-            if (ge != null)
+            executor = deserializer.fromJson( serial, GameExecutor.class );
+            if (executor != null && !executor.isConsistent())
             {
-                // Rehydrated observers are stale
-                ge.deleteObservers();
+                executor = null;
             }
-
-            return ge;
         }
         catch (Exception e)
         {
             Log.w( TAG, "deserialize", e );
-            return null;
         }
+
+        if (executor == null)
+        {
+            executor = new GameExecutor();
+            executor.newGame();
+        }
+
+        return executor;
     }
 
     public static String serialize( GameExecutor src )
@@ -94,12 +99,12 @@ public class GameExecutorSerializer
 
     private Gson makeGson()
     {
-        GsonBuilder gson = new GsonBuilder();
-        gson.registerTypeAdapter( Player.class, new PlayerDeserializer() );
-        gson.registerTypeAdapter( Player.class, new PlayerSerializer() );
-        Gson serializer = gson.serializeNulls().create();
+        GsonBuilder gson = new GsonBuilder()
+            .registerTypeAdapter( Player.class, new PlayerDeserializer() )
+            .registerTypeAdapter( Player.class, new PlayerSerializer() )
+            .serializeNulls();
 
-        return serializer;
+        return gson.create();
     }
 
     /*

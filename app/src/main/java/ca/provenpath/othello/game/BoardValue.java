@@ -29,7 +29,8 @@ public enum BoardValue
     WHITE,
     BLACK,
     VALID_WHITE,
-    VALID_BLACK;
+    VALID_BLACK,
+    VALID_BOTH;
 
 
     /**
@@ -86,7 +87,16 @@ public enum BoardValue
      */
     public final boolean isValidMove()
     {
-        return ((this == VALID_BLACK) || (this == VALID_WHITE));
+        switch (this)
+        {
+            case VALID_BOTH:
+            case VALID_BLACK:
+            case VALID_WHITE:
+                return true;
+
+            default:
+                return false;
+        }
     }
 
 
@@ -134,6 +144,9 @@ public enum BoardValue
             case VALID_BLACK:
                 return "b";
 
+            case VALID_BOTH:
+                return "*";
+
             default:
                 throw new IllegalStateException( "Unexpected value " + this.name() );
         }
@@ -163,6 +176,9 @@ public enum BoardValue
 
             case 'b':
                 return VALID_BLACK;
+
+            case '*':
+                return VALID_BOTH;
 
             default:
                 throw new IllegalStateException( "Unexpected value: '" + c + "'" );

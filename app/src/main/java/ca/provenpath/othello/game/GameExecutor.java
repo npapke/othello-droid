@@ -23,8 +23,6 @@ import android.util.Log;
 
 import ca.provenpath.othello.game.observer.GameState;
 
-import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Observable;
 
 /**
@@ -39,9 +37,6 @@ public class GameExecutor extends Observable
     {
         Log.i( TAG, "newGame" );
 
-        Assert.notNull( player[0] );
-        Assert.notNull( player[1] );
-
         board = new Board();
         moveNumber = 1;
         state = GameState.TURN_PLAYER_0;
@@ -52,15 +47,18 @@ public class GameExecutor extends Observable
 
     public void endGame()
     {
-        isEnded = true;
+        setState( GameState.GAME_OVER );
 
         player[0].interruptMove();
         player[1].interruptMove();
 
-        state = GameState.GAME_OVER;
-
         setChanged();
         notifyObservers( this );
+    }
+
+    public boolean isConsistent()
+    {
+        return (board != null) && board.isConsistent() && (player[0] != null) && (player[1] != null);
     }
 
 
@@ -71,6 +69,8 @@ public class GameExecutor extends Observable
     public void executeOneTurn()
     {
         Log.d( TAG, "executeOneTurn: state=" + state );
+
+        Assert.notNull( isConsistent() );
 
         switch (state)
         {
@@ -118,7 +118,7 @@ public class GameExecutor extends Observable
      */
     private void setState( GameState state )
     {
-        if (!isEnded)
+        if (this.state != GameState.GAME_OVER)
         {
             this.state = state;
         }
@@ -224,7 +224,5 @@ public class GameExecutor extends Observable
     {
         return moveNumber;
     }
-
-    private volatile boolean isEnded = false;
 
 }

@@ -92,7 +92,7 @@ public class BoardAdapter extends BaseAdapter
             // TODO determine size dynamically
             int size = 110; // Math.min( parent.getHeight(), parent.getWidth() ) / 8;
 
-            Log.d( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
+            Log.v( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
 
             imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
             imageView.setScaleType( ImageView.ScaleType.FIT_XY );
@@ -162,9 +162,10 @@ public class BoardAdapter extends BaseAdapter
         return imageView;
     }
 
-    public void redraw( Board newBoard )
+    public void redraw( Board newBoard, BoardValue validMoveFilter )
     {
         mOldBoard = mBoard;
+        mValidMoveFilter = validMoveFilter;
         mBoard = (newBoard == null) ? new Board() : (Board) newBoard.clone();
 
         notifyDataSetChanged();
@@ -183,8 +184,11 @@ public class BoardAdapter extends BaseAdapter
 
             case VALID_BLACK:
             case VALID_WHITE:
+            case VALID_BOTH:
             default:
-                return R.drawable.cell_valid;
+                return (((bv == BoardValue.VALID_BOTH) && (mValidMoveFilter != BoardValue.EMPTY)) || (bv == mValidMoveFilter))
+                        ? R.drawable.cell_valid
+                        : R.drawable.cell_empty;
         }
     }
 
@@ -192,4 +196,5 @@ public class BoardAdapter extends BaseAdapter
     private Board mBoard = new Board();
     private Board mOldBoard = new Board();
     private ImageView[] mBoardImages = new ImageView[Board.BOARD_LSIZE];
+    private BoardValue mValidMoveFilter;
 }

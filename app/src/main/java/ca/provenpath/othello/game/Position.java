@@ -27,6 +27,23 @@ public class Position
 {
     protected int linear;
 
+    /**
+     * Default constructor to invalid position
+     */
+    public Position()
+    {
+        linear = -1;
+    }
+
+    /**
+     * Copy Constructor based on linear position
+     * @param p the postion
+     */
+    public Position( Position p )
+    {
+        linear = p.linear;
+    }
+
 
     /**
      * Constructor based on linear position
@@ -79,6 +96,15 @@ public class Position
         return this.linear;
     }
 
+    /**
+     * Copy contents of other Position
+     * @param from
+     */
+    public void copy( Position from )
+    {
+        linear = from.linear;
+    }
+
 
     /**
      * Stringifier
@@ -125,15 +151,15 @@ public class Position
     }
 
     /**
-     * Adjust a position.  The original position is unchanged.
+     * Adjust a position.
      * <p>
      * Note that resultant position may be invalid.
      * @param linearOffset
      * @return an updated position
      */
-    public Position add( int linearOffset )
+    public void add( int linearOffset )
     {
-        return new Position( this.linear + linearOffset );
+        this.linear += linearOffset;
     }
 
 

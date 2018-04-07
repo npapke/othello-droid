@@ -36,6 +36,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Observable;
 import java.util.Observer;
@@ -158,8 +159,6 @@ public class MainActivity extends ActionBarActivity
         {
             runExecutor( mExecutor );
         }
-
-        mHandler.obtainMessage( MSG_REDRAW ).sendToTarget();
     }
 
     @Override
@@ -277,8 +276,6 @@ public class MainActivity extends ActionBarActivity
         }
 
         mExecutor = new GameExecutor();
-        mExecutor.setPlayer( mHumanPlayer, new HumanPlayer( BoardValue.BLACK ) );
-        mExecutor.setPlayer( mComputerPlayer, new ComputerPlayer( BoardValue.WHITE ) );
 
         mExecutor.newGame();
         runExecutor( mExecutor );
@@ -311,13 +308,10 @@ public class MainActivity extends ActionBarActivity
 
     private void runExecutor( final GameExecutor executor )
     {
-
         if (executor != null)
         {
             new Thread()
             {
-                private long noDisplayUpdateBefore = 0;
-
                 @Override
                 public void run()
                 {
@@ -326,39 +320,42 @@ public class MainActivity extends ActionBarActivity
                         @Override
                         public void update( Observable observable, Object data )
                         {
-                            try
-                            {
-                                Thread.sleep( Math.max( 0, noDisplayUpdateBefore - System.currentTimeMillis() ) );
-                            }
-                            catch (InterruptedException e)
-                            {
-                            }
-
-                            // Send redraw request to UI thread.
-                            Message msg = mHandler.obtainMessage( MSG_REDRAW );
-                            msg.obj = GameExecutorSerializer.serialize( (GameExecutor) data );
-                            msg.sendToTarget();
                         }
                     } );
 
-                    // Send redraw request to UI thread.
-                    Message msg = mHandler.obtainMessage( MSG_REDRAW );
-                    msg.obj = GameExecutorSerializer.serialize( executor );
-                    msg.sendToTarget();
 
                     while (executor.getState() != GameState.GAME_OVER)
                     {
                         applyPreferences( executor );
+                        sendRedrawRequest( executor );
 
                         // This is to provide a visible pause for fast computer moves.
                         long delay = 2000;
-                        noDisplayUpdateBefore = System.currentTimeMillis() + delay;
+                        long noMoveBefore = System.currentTimeMillis() + delay;
 
                         executor.executeOneTurn();
+
+                        sendRedrawRequest( executor );
+
+                        try
+                        {
+                            Thread.sleep( Math.max( 0, noMoveBefore - System.currentTimeMillis() ) );
+                        }
+                        catch (InterruptedException e)
+                        {
+                        }
                     }
                 }
             }.start();
         }
+    }
+
+    /** Sends redraw request to UI thread. */
+    private void sendRedrawRequest( GameExecutor executor )
+    {
+        Message msg = mHandler.obtainMessage( MSG_REDRAW );
+        msg.obj = GameExecutorSerializer.serialize( executor );
+        msg.sendToTarget();
     }
 
     private void applyPreferences( GameExecutor executor )
@@ -380,7 +377,6 @@ public class MainActivity extends ActionBarActivity
                 ComputerPlayer cplayer = new ComputerPlayer( color );
 
                 cplayer.setMaxDepth( Integer.parseInt( prefs.getString( PlayerSettingsFragment.KEY_LOOKAHEAD, "4" ) ) );
-                cplayer.setParallel( prefs.getBoolean( PlayerSettingsFragment.KEY_PARALLEL, false ) );
                 cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( PlayerSettingsFragment.KEY_STRATEGY, "" ) ) );
 
                 executor.setPlayer( index, cplayer );
@@ -407,7 +403,7 @@ public class MainActivity extends ActionBarActivity
         {
             messageView.setText( "Select 'New Game' to start" );
 
-            mBoardAdaptor.redraw( null );
+            mBoardAdaptor.redraw( null, BoardValue.EMPTY );
         }
         else
         {
@@ -427,13 +423,20 @@ public class MainActivity extends ActionBarActivity
             {
                 case TURN_PLAYER_0:
                 case TURN_PLAYER_1:
-                    if (player.isComputer())
+                    if (player != null)
                     {
-                        buf.append( "Processing for " + player.getColor().name() );
+                        if (player.isComputer())
+                        {
+                            buf.append( "Processing for " + player.getColor().name() );
+                        }
+                        else
+                        {
+                            buf.append( player.getColor().name() + ", your turn." );
+                        }
                     }
                     else
                     {
-                        buf.append( player.getColor().name() + ", your turn." );
+                        buf.append( "missing player" );
                     }
                     break;
 
@@ -460,16 +463,20 @@ public class MainActivity extends ActionBarActivity
     {
         // Only for human player
         Player player = executor.getNextPlayer();
+
         if ((player != null) && !player.isComputer())
         {
             Board boardWithValid = (Board) mExecutor.getBoard().clone();
-            boardWithValid.determineValidMoves( player.getColor() );
 
-            mBoardAdaptor.redraw( boardWithValid );
+            BoardValue validMoveFilter = (player.getColor() == BoardValue.BLACK)
+                ? BoardValue.VALID_BLACK
+                : BoardValue.VALID_WHITE;
+
+            mBoardAdaptor.redraw( boardWithValid, validMoveFilter );
         }
         else
         {
-            mBoardAdaptor.redraw( executor.getBoard() );
+            mBoardAdaptor.redraw( executor.getBoard(), BoardValue.EMPTY );
         }
     }
 
@@ -492,29 +499,11 @@ public class MainActivity extends ActionBarActivity
         }
     }
 
-    private void simulateMove( int position )
-    {
-        if (mExecutor != null)
-        {
-            Board board = (Board) mExecutor.getBoard().clone();
-            Move m = new Move( mExecutor.getPlayer( mHumanPlayer ).getColor(), new Position( position ) );
-            if (board.isValidMove( m ))
-            {
-                board.makeMove( m );
-                mBoardAdaptor.redraw( board );
-            }
-        }
-    }
-
-
     private final static int MSG_REDRAW = 341;
     private final static int MSG_SHOWVALID = 342;
 
     private final static String KEY_EXECUTOR = MainActivity.class.getName() + ".executor";
     private final static String KEY_LAST_MOVE = MainActivity.class.getName() + ".lastMove";
-
-    private int mHumanPlayer = 0;
-    private int mComputerPlayer = 1;
 
     private Handler mHandler;
     private GameExecutor mExecutor;

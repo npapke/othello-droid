@@ -74,9 +74,7 @@ public class ComputerPlayer extends Player
         isInterrupted = false;
 
         Stats stats = new Stats();
-        MiniMaxResult result = isParallel()
-                ? parallelMinimaxAB( board, color, 0, stats )
-                : minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE, stats );
+        MiniMaxResult result = minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE, stats );
 
         Assert.notNull( result.getBestMove() );
 
@@ -93,81 +91,6 @@ public class ComputerPlayer extends Player
     public void interruptMove()
     {
         isInterrupted = true;
-    }
-
-
-    /**
-     * Recursively build game tree.  Find the move that leads to the
-     * strongest board for the player.
-     *
-     * @param board  the board to evaluate
-     * @param player the player who's move it is
-     * @param depth  the current recursion depth (in half-moves)
-     * @param stats  performance statistics
-     * @return the value of board
-     */
-    private MiniMaxResult parallelMinimaxAB(
-            Board board,
-            final BoardValue player,
-            final int depth,
-            final Stats stats )
-    {
-        Assert.isTrue( maxDepth > 0 );
-
-        boolean validMoveSeen = false;
-        List<FutureTask<MiniMaxResult>> futures = new LinkedList<>();
-
-        for (Position pos : board)
-        {
-            Move m = new Move( player, pos );
-
-            if (board.isValidMove( m ))
-            {
-                validMoveSeen = true;
-
-                final Board copyOfBoard = (Board) board.clone();
-                copyOfBoard.makeMove( m );
-
-                FutureTask<MiniMaxResult> future = new FutureTask<MiniMaxResult>(
-                        new Callable<MiniMaxResult>()
-                        {
-                            @Override
-                            public MiniMaxResult call() throws Exception
-                            {
-                                return new MiniMaxResult(
-                                        minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, Integer.MIN_VALUE, Integer.MAX_VALUE, stats ).getValue(),
-                                        copyOfBoard.getLastMove().getPosition() );
-                            }
-                        } );
-
-                threadPool.execute( future );
-                futures.add( future );
-
-            }
-        }
-
-        Assert.isTrue( validMoveSeen );
-
-        MiniMaxResult bestResult = new MiniMaxResult( Integer.MIN_VALUE );
-
-        for (FutureTask<MiniMaxResult> future : futures)
-        {
-            try
-            {
-                MiniMaxResult result = future.get();
-
-                if (result.getValue() > bestResult.getValue())
-                {
-                    bestResult = result;
-                }
-            }
-            catch (Exception e)
-            {
-                Log.i( TAG, "Future result", e );
-            }
-        }
-
-        return bestResult;
     }
 
 
@@ -200,7 +123,7 @@ public class ComputerPlayer extends Player
 
         boolean validMoveSeen = false;
         int value;
-        Position bestPos = null;
+        Position bestPos = new Position();
 
         if (player == color)
         {
@@ -221,13 +144,16 @@ public class ComputerPlayer extends Player
                     if (result > value)
                     {
                         value = result;
-                        bestPos = pos;
+                        bestPos.copy( pos );
                     }
 
                     alpha = Math.max( value, alpha );
                     if (beta <= alpha)
                         break;
                 }
+
+                if (isInterrupted)
+                    break;
             }
         }
         else
@@ -249,13 +175,16 @@ public class ComputerPlayer extends Player
                     if (result < value)
                     {
                         value = result;
-                        bestPos = pos;
+                        bestPos.copy( pos );
                     }
 
                     beta = Math.min( value, beta );
                     if (beta <= alpha)
                         break;
                 }
+
+                if (isInterrupted)
+                    break;
             }
         }
 
@@ -341,11 +270,6 @@ public class ComputerPlayer extends Player
     }
 
 
-    private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();
-    private static BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>( Board.BOARD_LSIZE );
-    private static ThreadPoolExecutor threadPool = new ThreadPoolExecutor( NUM_CORES, NUM_CORES, 10, TimeUnit.SECONDS, workQueue );
-
-
     //
     // ---------------- Bean Pattern ---------------
     //
@@ -398,19 +322,5 @@ public class ComputerPlayer extends Player
         this.strategy = strategy;
     }
 
-    private boolean isParallel = false;
-
-    public void setParallel( boolean isParallel )
-    {
-        this.isParallel = isParallel;
-    }
-
-    public boolean isParallel()
-    {
-        return isParallel;
-    }
-
-    private volatile boolean isInterrupted = false;
-
-
+    private transient volatile boolean isInterrupted = false;
 }

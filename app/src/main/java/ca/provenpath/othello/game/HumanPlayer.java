@@ -118,5 +118,5 @@ public class HumanPlayer extends Player
         private Move mMove;
     }
 
-    private BlockingQueue<HumanMove> nextMove = new ArrayBlockingQueue< HumanMove >( 1 );
+    private transient BlockingQueue<HumanMove> nextMove = new ArrayBlockingQueue< HumanMove >( 1 );
 }

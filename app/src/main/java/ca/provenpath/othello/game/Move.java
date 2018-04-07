@@ -19,6 +19,8 @@
 
 package ca.provenpath.othello.game;
 
+import java.util.Objects;
+
 /**
  *
  * @author npapke
@@ -26,10 +28,14 @@ package ca.provenpath.othello.game;
 public class Move
 {
 
+    public Move( Move other )
+    {
+        this( other.value, other.position );
+    }
 
     public Move( BoardValue value, Position position)
     {
-        this.position = position;
+        this.position = new Position( position );
         this.value = value;
     }
 
@@ -42,8 +48,24 @@ public class Move
     {
         return value.toString() + position.toString();
     }
-    
-    
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Move move = (Move) o;
+        return Objects.equals( position, move.position ) &&
+                value == move.value;
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        return Objects.hash( position, value );
+    }
+
     //
     // -------------- Bean Pattern -------------
     //
