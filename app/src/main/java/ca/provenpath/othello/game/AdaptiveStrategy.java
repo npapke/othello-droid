@@ -38,6 +38,7 @@ public class AdaptiveStrategy extends Strategy
         int score = 0;
         int protectedScore = 0;
         int freedom = 0;
+        int threats = 0;
         int numMoves = 0;
 
         BoardValue otherPlayer = player.otherPlayer();
@@ -62,25 +63,39 @@ public class AdaptiveStrategy extends Strategy
             {
                 freedom++;
             }
+            else if (board.isValidMove( new Move( otherPlayer, pos ) ))
+            {
+                threats++;
+            }
         }
 
         int finalScore;
 
-        freedom = scale( freedom, 0, 16 );
-        score = scale( score, -64, 64 );
-        protectedScore = scale( protectedScore, -512, 512 );
+        freedom = scale( freedom, 0, 16 );  // a large max is not realistic
+        threats = scale( threats, 0, 16 );  // a large max is not realistic
 
+        // Allow scores to go negative, i.e., [0,100] -> [-100,100]
+        score = (scale( score, -numMoves, numMoves ) * 2) - 100;
+        protectedScore = (scale( protectedScore, -numMoves * 10, numMoves * 10 ) * 2) - 100;
+
+        /*
+         * The following is conjecture
+         */
         if (numMoves < 16)
         {
-            finalScore = (freedom * 30) + (protectedScore * 60) + (score * 10);
+            finalScore = (freedom * 30) + (protectedScore * 20) + (score * 60) - (threats * 10);
         }
         else if (numMoves < 50)
         {
-            finalScore = (freedom * 20) + (protectedScore * 50) + (score * 30);
+            finalScore = (freedom * 20) + (protectedScore * 70) + (score * 30) - (threats * 20);
+        }
+        else if (numMoves < 64)
+        {
+            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 70) - (threats * 20);
         }
         else
         {
-            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 70);
+            finalScore = score * 100;
         }
 
         return finalScore;
@@ -97,7 +112,7 @@ public class AdaptiveStrategy extends Strategy
     {
         int clipped = Math.min( Math.max( value, min ), max );
 
-        return (clipped - min) * 100 / max;
+        return (clipped - min) * 100 / (max - min);
     }
 
     /**
@@ -107,6 +122,11 @@ public class AdaptiveStrategy extends Strategy
      */
     private int calcProtectedScore( int count )
     {
-        return 1 << count;
+        switch (count)
+        {
+            case 4: return 10;
+            case 3: return 5;
+            default: return count;
+        }
     }
 }
