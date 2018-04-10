@@ -37,7 +37,6 @@ public class PlayerSettingsFragment extends PreferenceFragment
     public final static String KEY_ISCOMPUTER = "pref_iscomputer";
     public final static String KEY_STRATEGY = "pref_strategy";
     public final static String KEY_LOOKAHEAD = "pref_lookahead";
-    public final static String KEY_PARALLEL = "pref_parallel";
 
     @Override
     public void onCreate( Bundle savedInstanceState )

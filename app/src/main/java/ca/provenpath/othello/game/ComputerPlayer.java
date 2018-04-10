@@ -20,16 +20,12 @@
 package ca.provenpath.othello.game;
 
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -41,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ComputerPlayer extends Player
 {
-    public final static String TAG = ComputerPlayer.class.getName();
+    public final static String TAG = ComputerPlayer.class.getSimpleName();
 
     public ComputerPlayer( BoardValue color )
     {
@@ -74,17 +70,17 @@ public class ComputerPlayer extends Player
         isInterrupted = false;
 
         Stats stats = new Stats();
-        MiniMaxResult result = minimaxAB( board, color, 0, Integer.MIN_VALUE, Integer.MAX_VALUE, stats );
+        MiniMaxResult result = minimaxAB( board, color, maxDepth, stats );
 
-        Assert.notNull( result.getBestMove() );
+        Assert.notNull( result.getBestPosition() );
 
-        Log.i( TAG, "makeMove: " + result.getBestMove() + ", value: " + result.getValue() );
+        Log.i( TAG, "makeMove: " + result.getBestPosition() + ", value: " + result.getValue() );
         long duration = stats.duration();
         Log.i( TAG, String.format( "%d boards evaluated in %d ms. %d boards/sec",
                 stats.getBoardsEvaluated(), duration,
                 duration != 0 ? stats.getBoardsEvaluated() * 1000 / duration : 999999 ) );
 
-        board.makeMove( new Move( color, result.getBestMove() ) );
+        board.makeMove( new Move( color, result.getBestPosition() ) );
     }
 
     @Override
@@ -93,6 +89,142 @@ public class ComputerPlayer extends Player
         isInterrupted = true;
     }
 
+
+    /**
+     * Recursively build game tree.  Find the move that leads to the
+     * strongest board for the player.  Utilize alpha-beta pruning
+     * to narrow search.
+     * <p>
+     * This is specialized implementation for the first ply.
+     *
+     * @param board  the board to evaluate
+     * @param player the player who's move it is
+     * @param depth  the current recursion depth (in half-moves)
+     * @param stats  performance statistics
+     * @return the value of board
+     */
+    private MiniMaxResult minimaxAB(
+            Board board,
+            BoardValue player,
+            int depth,
+            Stats stats )
+    {
+        int alpha = Integer.MIN_VALUE;
+        int beta = Integer.MAX_VALUE;
+
+        int value = Integer.MIN_VALUE;
+
+        final PriorityQueue<MiniMaxResult> candidates = new PriorityQueue<>();
+        final PriorityQueue<MiniMaxResult> results = new PriorityQueue<>();
+
+        for (Position pos : board)
+        {
+            Move m = new Move( player, pos );
+
+            if (board.isValidMove( m ))
+            {
+                candidates.add( new MiniMaxResult( 0, pos ) );
+            }
+        }
+
+        /*
+         * Build game tree of increasing depths.  Use results of one iteration to
+         * hint better candidates to the subsequent iteration.  alpha-beta pruning
+         * benefits greatly from discovering the best solution early.
+         */
+        for (int curDepth : new int [] {1, 3, depth})
+        {
+            results.clear();
+
+            for (MiniMaxResult candidate : candidates)
+            {
+                // Always the maximizing player
+                Board copyOfBoard = (Board) board.clone();
+                copyOfBoard.makeMove( new Move( player, candidate.getBestPosition() ) );
+
+                int result = minimaxAB( copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats );
+
+                results.add( new MiniMaxResult( result, candidate.getBestPosition() ) );
+
+                value = Math.max( value, result );
+                alpha = Math.max( value, alpha );
+                if (beta <= alpha)
+                    break;
+
+                if (isInterrupted)
+                    break;
+            }
+
+            if (curDepth > 1)
+            {
+                Log.i( TAG, String.format( "Predicted best move: %s, found %s at depth %d",
+                        candidates.peek(), results.peek(), curDepth ) );
+                Log.i( TAG, String.format( "Predicted best move at position %d of %d",
+                        new Callable<Integer>()
+                        {
+                            @Override
+                            public Integer call()
+                            {
+                                int ordinal = 1;
+                                Position target = candidates.peek().getBestPosition();
+                                for (MiniMaxResult res : results)
+                                {
+                                    if (res.getBestPosition().equals( target ))
+                                    {
+                                        return ordinal;
+                                    }
+                                    ++ordinal;
+                                }
+
+                                return -1;
+                            }
+                        }.call(),
+                        results.size() ) );
+            }
+
+            candidates.clear();
+            candidates.addAll( results );
+        }
+
+        // We should be assured at least one valid move
+        Assert.isTrue( !results.isEmpty() );
+
+        return bestResultOf( results );
+    }
+
+    /**
+     * Applies a little entropy to homogeneous results.
+     * @param results candidate results sorted in value order
+     * @return "best" result
+     */
+    private MiniMaxResult bestResultOf( Iterable<MiniMaxResult> results )
+    {
+        MiniMaxResult best = null;
+
+        for (MiniMaxResult result : results)
+        {
+            if (best == null)
+            {
+                best = result;
+            }
+            else if (best.value == result.value)
+            {
+                // Decide randomly which one to take
+                // FIXME better distribution for N > 2 results
+                if (Math.random() < 0.5)
+                {
+                    Log.i( TAG, "Updated result to " + result );
+                    best = result;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return best;
+    }
 
     /**
      * Recursively build game tree.  Find the move that leads to the
@@ -107,7 +239,7 @@ public class ComputerPlayer extends Player
      * @param stats  performance statistics
      * @return the value of board
      */
-    private MiniMaxResult minimaxAB(
+    private int minimaxAB(
             Board board,
             BoardValue player,
             int depth,
@@ -115,10 +247,10 @@ public class ComputerPlayer extends Player
             int beta,
             Stats stats )
     {
-        if (depth >= maxDepth || isInterrupted)
+        if (depth <= 0 || isInterrupted)
         {
             stats.incBoard();
-            return new MiniMaxResult( strategy.determineBoardValue( color, board ) );
+            return strategy.determineBoardValue( color, board );
         }
 
         boolean validMoveSeen = false;
@@ -140,7 +272,7 @@ public class ComputerPlayer extends Player
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove( m );
 
-                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta, stats ).getValue();
+                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats );
                     if (result > value)
                     {
                         value = result;
@@ -171,7 +303,7 @@ public class ComputerPlayer extends Player
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove( m );
 
-                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth + 1, alpha, beta, stats ).getValue();
+                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats );
                     if (result < value)
                     {
                         value = result;
@@ -194,7 +326,7 @@ public class ComputerPlayer extends Player
 
             if (board.hasValidMove( player.otherPlayer() ))
             {
-                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta, stats ).getValue();
+                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta, stats );
             }
             else
             {
@@ -203,15 +335,24 @@ public class ComputerPlayer extends Player
             }
         }
 
-        return new MiniMaxResult( value, bestPos );
+        return value;
     }
 
 
-    private class MiniMaxResult
+    private class MiniMaxResult implements Comparable<MiniMaxResult>
     {
         public MiniMaxResult( int value )
         {
             this.value = value;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "MiniMaxResult{" +
+                    "value=" + value +
+                    ", bestMove=" + bestMove +
+                    '}';
         }
 
         public MiniMaxResult( int value, Position bestMove )
@@ -232,7 +373,7 @@ public class ComputerPlayer extends Player
 
         private int value;
 
-        public Position getBestMove()
+        public Position getBestPosition()
         {
             return bestMove;
         }
@@ -243,6 +384,26 @@ public class ComputerPlayer extends Player
         }
 
         private Position bestMove;
+
+        /**
+         * Compares this object to the specified object to determine their relative
+         * order.
+         *
+         * Natural sort order is highest value results first.
+         *
+         * @param another the object to compare to this instance.
+         * @return a negative integer if this instance is less than {@code another};
+         * a positive integer if this instance is greater than
+         * {@code another}; 0 if this instance has the same order as
+         * {@code another}.
+         * @throws ClassCastException if {@code another} cannot be converted into something
+         *                            comparable to {@code this} instance.
+         */
+        @Override
+        public int compareTo( @NonNull MiniMaxResult another )
+        {
+            return Integer.compare( another.value, this.value );
+        }
     }
 
     /**

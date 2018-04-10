@@ -22,11 +22,5 @@
             android:entryValues="@array/pref_strategys_values"
             android:key="pref_strategy"
             android:title="@string/pref_strategy"/>
-        <CheckBoxPreference
-            android:dependency="pref_iscomputer"
-            android:defaultValue="true"
-            android:key="pref_parallel"
-            android:summary="@string/pref_parallel_summ"
-            android:title="@string/pref_parallel"/>
     </PreferenceCategory>
 </PreferenceScreen>
