@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 
 import static ca.provenpath.othello.game.BoardValue.*;
@@ -258,10 +256,9 @@ public class Board implements Cloneable, Iterable<Position>
 
         for (;;)
         {
-            Position last = new Position( cur );
             cur.add( direction );
 
-            if (!cur.isValid() || !cur.isAdjacent( last ))
+            if (!cur.isValid())
             {
                 // past the edge of the board
                 return BoardValue.EMPTY;
@@ -296,24 +293,35 @@ public class Board implements Cloneable, Iterable<Position>
      * A score of 4 indicates the piece cannot be flipped.
      * </p>
      * @param p position
-     * @return true if protected.
+     * @return [0,4]
      */
     public int countProtected( Position p )
     {
-        if (!isOccupiedBoardValue( p ))
+        BoardValue me = getValue( p );
+
+        if (!me.isPlayer())
         {
             return 0;
         }
 
-        // FIXME This won't identify all situations that protect a cell,
-        // e.g., xox?oxoo
-
+        BoardValue other = me.otherPlayer();
         int score = 0;
 
         for (int direction : cardinalDirectionTable)
         {
-            if ( isSameColor( direction, p ) || isSameColor( -direction, p ))
+            // arbitrary direction names
+            BoardValue left = findColorChange( -direction, p );
+            BoardValue right = findColorChange( direction, p );
+
+            if (me.equals( left ) || me.equals( right ))
             {
+                // a run of my color all the way to an edge
+                ++score;
+            }
+            else if (other.equals( left ) && other.equals( right ))
+            {
+                // my piece is boxed in
+                // TODO is this really protected?
                 ++score;
             }
         }
@@ -608,10 +616,9 @@ public class Board implements Cloneable, Iterable<Position>
 
         for (;;)
         {
-            Position last = new Position( cur );
             cur.add( direction );
 
-            if (!cur.isValid() || !cur.isAdjacent( last ))
+            if (!cur.isValid())
             {
                 // past the edge of the board
                 return false;
@@ -646,27 +653,26 @@ public class Board implements Cloneable, Iterable<Position>
      * @param pos starting position
      * @return true iff pieces are of the same color
      */
-    private boolean isSameColor( int direction, Position pos )
+    private BoardValue findColorChange( int direction, Position pos )
     {
         final BoardValue thisPlayer = getValue( pos );
         Position cur = new Position( pos );
 
         for (;;)
         {
-            Position last = new Position( cur );
             cur.add( direction );
 
-            if (!cur.isValid() || !cur.isAdjacent( last ))
+            if (!cur.isValid())
             {
                 // past the edge of the board
-                return true;
+                return thisPlayer;
             }
 
             BoardValue curBoardValue = getValue( cur );
 
             if (curBoardValue != thisPlayer)
             {
-                return false;
+                return curBoardValue;
             }
         }
     }

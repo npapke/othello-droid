@@ -92,7 +92,7 @@ public class BoardAdapter extends BaseAdapter
             // TODO determine size dynamically
             int size = 110; // Math.min( parent.getHeight(), parent.getWidth() ) / 8;
 
-            Log.v( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
+            // Log.v( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
 
             imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
             imageView.setScaleType( ImageView.ScaleType.FIT_XY );
@@ -120,39 +120,45 @@ public class BoardAdapter extends BaseAdapter
 
                     // "Fade in" animation for changed tiles
                     imageView.setImageAlpha( 0 );
-                    ObjectAnimator animatorAlpha = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
+                    mAnimators[ position ] = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
+                    mAnimators[ position ].setAutoCancel( true );
 
-                    boolean isLastMove = (mBoard.getLastMove() != null) && (position == mBoard.getLastMove().getPosition().getLinear());
+                    boolean isLastMove = (mBoard.getLastMove() != null)
+                        && (position == mBoard.getLastMove().getPosition().getLinear());
                     if (isLastMove)
                     {
-                        animatorAlpha.setDuration( 250 );
-                        animatorAlpha.setRepeatCount( 4 );
-                        animatorAlpha.setRepeatMode( ObjectAnimator.REVERSE );
+                        mAnimators[ position ].setDuration( 250 );
+                        mAnimators[ position ].setRepeatCount( 4 );
+                        mAnimators[ position ].setRepeatMode( ObjectAnimator.REVERSE );
                     }
                     else
                     {
-                        animatorAlpha.setStartDelay( 500 );
-                        animatorAlpha.setDuration( 750 );
+                        mAnimators[ position ].setStartDelay( 500 );
+                        mAnimators[ position ].setDuration( 750 );
                     }
 
-                    animatorAlpha.start();
+                    mAnimators[ position ].setStartDelay( 100 );
+                    mAnimators[ position ].start();
 
                     break;
                 }
 
                 case VALID_BLACK:
                 case VALID_WHITE:
+                case VALID_BOTH:
                 {
                     imageView.setBackgroundResource( resourceForCell( BoardValue.EMPTY ) );
 
                     // "Fade in" animation for changed tiles
                     imageView.setImageAlpha( 0 );
-                    ObjectAnimator animatorAlpha = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
+                    mAnimators[ position ] = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
+                    mAnimators[ position ].setAutoCancel( true );
 
-                    animatorAlpha.setDuration( 100 );
-                    animatorAlpha.setStartDelay( 1500 );
+                    mAnimators[ position ].setStartDelay( 100 );
+                    mAnimators[ position ].setDuration( 100 );
+                    mAnimators[ position ].setStartDelay( 1500 );
 
-                    animatorAlpha.start();
+                    mAnimators[ position ].start();
 
                     break;
                 }
@@ -196,5 +202,6 @@ public class BoardAdapter extends BaseAdapter
     private Board mBoard = new Board();
     private Board mOldBoard = new Board();
     private ImageView[] mBoardImages = new ImageView[Board.BOARD_LSIZE];
+    private ObjectAnimator[] mAnimators = new ObjectAnimator[Board.BOARD_LSIZE];
     private BoardValue mValidMoveFilter;
 }

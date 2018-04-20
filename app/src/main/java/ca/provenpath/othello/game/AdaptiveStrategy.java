@@ -75,23 +75,27 @@ public class AdaptiveStrategy extends Strategy
         threats = scale( threats, 0, 16 );  // a large max is not realistic
 
         // Allow scores to go negative, i.e., [0,100] -> [-100,100]
-        score = (scale( score, -numMoves, numMoves ) * 2) - 100;
-        protectedScore = (scale( protectedScore, -numMoves * 10, numMoves * 10 ) * 2) - 100;
+        score = scale2( score, -numMoves, numMoves );
+        protectedScore = scale2( protectedScore, -numMoves * 10, numMoves * 10 );
 
         /*
          * The following is conjecture
          */
         if (numMoves < 16)
         {
-            finalScore = (freedom * 30) + (protectedScore * 20) + (score * 60) - (threats * 10);
+            finalScore = (freedom * 30) + (protectedScore * 40) + (score * 40) - (threats * 10);
         }
         else if (numMoves < 50)
         {
             finalScore = (freedom * 20) + (protectedScore * 70) + (score * 30) - (threats * 20);
         }
-        else if (numMoves < 64)
+        else if (numMoves < 60)
         {
             finalScore = (freedom * 0) + (protectedScore * 30) + (score * 70) - (threats * 20);
+        }
+        else if (numMoves < 64)
+        {
+            finalScore = (freedom * 0) + (protectedScore * 0) + (score * 100) - (threats * 0);
         }
         else
         {
@@ -116,6 +120,20 @@ public class AdaptiveStrategy extends Strategy
     }
 
     /**
+     * Scales input value to [-100,100].  input value is considered to be in [min,max].
+     * @param value input value
+     * @param min lower bound for value
+     * @param max upper bound for value
+     * @return scaled value
+     */
+    private int scale2( int value, int min, int max )
+    {
+        int clipped = Math.min( Math.max( value, min ), max );
+
+        return ((clipped - min) * 200 / (max - min)) - 100;
+    }
+
+    /**
      * Scores a protected cell count
      * @param count protected axis count
      * @return
@@ -125,8 +143,8 @@ public class AdaptiveStrategy extends Strategy
         switch (count)
         {
             case 4: return 10;
-            case 3: return 5;
-            default: return count;
+            case 3: return 2;
+            default: return 0;
         }
     }
 }

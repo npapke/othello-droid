@@ -23,7 +23,7 @@ package ca.provenpath.othello.game;
  * Position on a board
  * @author npapke
  */
-public class Position
+public class Position implements Cloneable
 {
     protected int linear;
 
@@ -65,6 +65,11 @@ public class Position
         setLinear( makeLinear( x, y ) );
     }
 
+    @Override
+    public Object clone()
+    {
+        return new Position( linear );
+    }
 
     /**
      * Equality comparator
@@ -159,7 +164,29 @@ public class Position
      */
     public void add( int linearOffset )
     {
-        this.linear += linearOffset;
+        int newLinear = linear + linearOffset;
+
+        linear = isAdjacent( linear, newLinear ) ? newLinear : -1;
+    }
+
+    /**
+     * Determine if the specified position is adjacent to this one.
+     * This method is intended
+     * @param p1 the first position to compare
+     * @param p2 the second position to compare
+     * @return <code>true</code> iff positions are adjacent
+     */
+    private static boolean isAdjacent( int p1, int p2 )
+    {
+        int x1 = p1 / Board.BOARD_SIZE;
+        int x2 = p2 / Board.BOARD_SIZE;
+        int y1 = p1 % Board.BOARD_SIZE;
+        int y2 = p2 % Board.BOARD_SIZE;
+
+        int xdiff = Math.abs( x1 - x2 );
+        int ydiff = Math.abs( y1 - y2 );
+
+        return ((xdiff + ydiff) == 1) || ((xdiff + ydiff) == 2);
     }
 
 
@@ -171,10 +198,7 @@ public class Position
      */
     public boolean isAdjacent( Position p )
     {
-        int xdiff = Math.abs( this.getX() - p.getX() );
-        int ydiff = Math.abs( this.getY() - p.getY() );
-
-        return ((xdiff + ydiff) == 1) || ((xdiff + ydiff) == 2);
+        return isAdjacent( linear, p.linear );
     }
 
     /**
