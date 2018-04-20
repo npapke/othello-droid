@@ -315,15 +315,6 @@ public class MainActivity extends ActionBarActivity
                 @Override
                 public void run()
                 {
-                    executor.addObserver( new Observer()
-                    {
-                        @Override
-                        public void update( Observable observable, Object data )
-                        {
-                        }
-                    } );
-
-
                     while (executor.getState() != GameState.GAME_OVER)
                     {
                         applyPreferences( executor );
