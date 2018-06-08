@@ -310,7 +310,7 @@ public class MainActivity extends ActionBarActivity
     {
         if (executor != null)
         {
-            new Thread()
+            new Thread("GameExecutor" )
             {
                 @Override
                 public void run()

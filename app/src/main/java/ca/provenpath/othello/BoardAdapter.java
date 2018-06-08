@@ -89,8 +89,7 @@ public class BoardAdapter extends BaseAdapter
             // if it's not recycled, initialize some attributes
             imageView = new ImageView( mContext );
 
-            // TODO determine size dynamically
-            int size = 110; // Math.min( parent.getHeight(), parent.getWidth() ) / 8;
+            int size = Math.min( parent.getHeight(), parent.getWidth() ) / 8;
 
             // Log.v( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
 
@@ -182,19 +181,19 @@ public class BoardAdapter extends BaseAdapter
         switch (bv)
         {
             case BLACK:
-                return R.drawable.cell_black;
+                return R.drawable.ic_cell_black;
             case WHITE:
-                return R.drawable.cell_white;
+                return R.drawable.ic_cell_white;
             case EMPTY:
-                return R.drawable.cell_empty;
+                return R.drawable.ic_cell_empty;
 
             case VALID_BLACK:
             case VALID_WHITE:
             case VALID_BOTH:
             default:
                 return (((bv == BoardValue.VALID_BOTH) && (mValidMoveFilter != BoardValue.EMPTY)) || (bv == mValidMoveFilter))
-                        ? R.drawable.cell_valid
-                        : R.drawable.cell_empty;
+                        ? R.drawable.ic_cell_valid
+                        : R.drawable.ic_cell_empty;
         }
     }
 

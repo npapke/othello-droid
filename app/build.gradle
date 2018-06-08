@@ -30,8 +30,8 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:21.0.3'
     implementation files('libs/gson-2.3.1.jar')
     implementation 'junit:junit:4.12'
-    implementation 'com.crashlytics.sdk.android:crashlytics:2.9.1'
-    implementation 'com.google.firebase:firebase-crash:11.8.0'
+    implementation 'com.crashlytics.sdk.android:crashlytics:2.9.3'
+    implementation 'com.google.firebase:firebase-crash:16.0.0'
 }
 
 apply plugin: 'com.google.gms.google-services'
