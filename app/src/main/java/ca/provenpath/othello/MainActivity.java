@@ -315,6 +315,8 @@ public class MainActivity extends ActionBarActivity
                 @Override
                 public void run()
                 {
+                    sendRedrawRequest( executor );
+
                     while (executor.getState() != GameState.GAME_OVER)
                     {
                         if( applyPreferences( executor ) )
@@ -508,7 +510,6 @@ public class MainActivity extends ActionBarActivity
     }
 
     private final static int MSG_REDRAW = 341;
-    private final static int MSG_SHOWVALID = 342;
 
     private final static String KEY_EXECUTOR = MainActivity.class.getName() + ".executor";
     private final static String KEY_LAST_MOVE = MainActivity.class.getName() + ".lastMove";
