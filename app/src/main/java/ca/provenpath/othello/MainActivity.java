@@ -317,24 +317,31 @@ public class MainActivity extends ActionBarActivity
                 {
                     while (executor.getState() != GameState.GAME_OVER)
                     {
-                        applyPreferences( executor );
-                        sendRedrawRequest( executor );
+                        if( applyPreferences( executor ) )
+                        {
+                            sendRedrawRequest( executor );
+                        }
 
                         // This is to provide a visible pause for fast computer moves.
                         long delay = 2000;
                         long noMoveBefore = System.currentTimeMillis() + delay;
 
+                        boolean isComputerPlayer = executor.getNextPlayer().isComputer();
+
                         executor.executeOneTurn();
 
-                        sendRedrawRequest( executor );
+                        if (isComputerPlayer)
+                        {
+                            try
+                            {
+                                Thread.sleep( Math.max( 0, noMoveBefore - System.currentTimeMillis() ) );
+                            }
+                            catch (InterruptedException e)
+                            {
+                            }
+                        }
 
-                        try
-                        {
-                            Thread.sleep( Math.max( 0, noMoveBefore - System.currentTimeMillis() ) );
-                        }
-                        catch (InterruptedException e)
-                        {
-                        }
+                        sendRedrawRequest( executor );
                     }
                 }
             }.start();
@@ -349,19 +356,23 @@ public class MainActivity extends ActionBarActivity
         msg.sendToTarget();
     }
 
-    private void applyPreferences( GameExecutor executor )
+    private boolean applyPreferences( GameExecutor executor )
     {
-        applyPreferences( executor, BoardValue.BLACK, 0 );
-        applyPreferences( executor, BoardValue.WHITE, 1 );
+        boolean rv0 = applyPreferences( executor, BoardValue.BLACK, 0 );
+        boolean rv1 = applyPreferences( executor, BoardValue.WHITE, 1 );
+
+        return rv0 || rv1;
     }
 
-    private void applyPreferences( GameExecutor executor, BoardValue color, int index )
+    private boolean applyPreferences( GameExecutor executor, BoardValue color, int index )
     {
         try
         {
             SharedPreferences prefs = getSharedPreferences(
                     PlayerSettingsFragment.getSharedPreferencesName( color.name() ),
                     Context.MODE_PRIVATE );
+
+            Player oldPlayer = executor.getPlayer( index );
 
             if (prefs.getBoolean( PlayerSettingsFragment.KEY_ISCOMPUTER, false ))
             {
@@ -371,16 +382,22 @@ public class MainActivity extends ActionBarActivity
                 cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( PlayerSettingsFragment.KEY_STRATEGY, "" ) ) );
 
                 executor.setPlayer( index, cplayer );
+
+                return (oldPlayer == null) || !oldPlayer.isComputer();
             }
             else
             {
                 executor.setPlayer( index, new HumanPlayer( color ) );
+
+                return (oldPlayer == null) || oldPlayer.isComputer();
             }
         }
         catch (Exception e)
         {
             Log.w( TAG, "Cannot apply preferences", e );
         }
+
+        return false;
     }
 
     private void updateDisplay( GameExecutor executor )

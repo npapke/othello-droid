@@ -20,10 +20,13 @@
 package ca.provenpath.othello;
 
 import android.animation.ObjectAnimator;
+import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.BounceInterpolator;
 import android.widget.Adapter;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
@@ -31,6 +34,7 @@ import android.widget.ImageView;
 
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
+import ca.provenpath.othello.game.Player;
 
 /**
  * Created by npapke on 2/22/15.
@@ -47,7 +51,7 @@ public class BoardAdapter extends BaseAdapter
     @Override
     public int getCount()
     {
-        return mBoardImages.length;
+        return Board.BOARD_LSIZE;
     }
 
     @Override
@@ -102,66 +106,62 @@ public class BoardAdapter extends BaseAdapter
             imageView = (ImageView) convertView;
         }
 
-        imageView.setImageResource( resourceForCell( mBoard.getLvalue( position ) ) );
-        mBoardImages[position] = imageView;
-
         BoardValue bv = mBoard.getLvalue( position );
-        boolean isAnimated = !bv.equals( mOldBoard.getLvalue( position ) );
+        int resource = resourceForCell( bv );
+        imageView.setImageResource( resource );
+
+        // FIXME We really need to compare the old resource, not the boardvalue.
+        boolean isAnimated = !bv.equals( mOldBoard.getLvalue( position ) )
+                || (resource == R.drawable.ic_cell_valid);
 
         if (isAnimated)
         {
+            ObjectAnimator animator = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
+            animator.setAutoCancel( true );
+
             switch (bv)
             {
                 case BLACK:
                 case WHITE:
                 {
-                    imageView.setBackgroundResource( resourceForCell( mOldBoard.getLvalue( position ) ) );
-
                     // "Fade in" animation for changed tiles
-                    imageView.setImageAlpha( 0 );
-                    mAnimators[ position ] = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
-                    mAnimators[ position ].setAutoCancel( true );
-
                     boolean isLastMove = (mBoard.getLastMove() != null)
                         && (position == mBoard.getLastMove().getPosition().getLinear());
                     if (isLastMove)
                     {
-                        mAnimators[ position ].setDuration( 250 );
-                        mAnimators[ position ].setRepeatCount( 4 );
-                        mAnimators[ position ].setRepeatMode( ObjectAnimator.REVERSE );
+                        // user placed this piece
+                        imageView.setBackgroundResource( resourceForCell( BoardValue.EMPTY ) );
+
+                        animator.setDuration( 250 );
+                        animator.setRepeatCount( 4 );
+                        animator.setRepeatMode( ObjectAnimator.REVERSE );
                     }
                     else
                     {
-                        mAnimators[ position ].setStartDelay( 500 );
-                        mAnimators[ position ].setDuration( 750 );
-                    }
+                        // this piece was flipped
+                        imageView.setBackgroundResource( resourceForCell( mOldBoard.getLvalue( position ) ) );
 
-                    mAnimators[ position ].setStartDelay( 100 );
-                    mAnimators[ position ].start();
+                        imageView.setImageAlpha( 0 );
+                        animator.setStartDelay( 500 );
+                        animator.setDuration( 1500 );
+                    }
 
                     break;
                 }
 
-                case VALID_BLACK:
-                case VALID_WHITE:
-                case VALID_BOTH:
+                default:
                 {
+                    // valid moves
                     imageView.setBackgroundResource( resourceForCell( BoardValue.EMPTY ) );
-
-                    // "Fade in" animation for changed tiles
                     imageView.setImageAlpha( 0 );
-                    mAnimators[ position ] = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
-                    mAnimators[ position ].setAutoCancel( true );
 
-                    mAnimators[ position ].setStartDelay( 100 );
-                    mAnimators[ position ].setDuration( 100 );
-                    mAnimators[ position ].setStartDelay( 1500 );
-
-                    mAnimators[ position ].start();
-
+                    animator.setStartDelay( 1000 );
+                    animator.setDuration( 3000 );
                     break;
                 }
             }
+
+            animator.start();
         }
 
         return imageView;
@@ -200,7 +200,5 @@ public class BoardAdapter extends BaseAdapter
     private Context mContext;
     private Board mBoard = new Board();
     private Board mOldBoard = new Board();
-    private ImageView[] mBoardImages = new ImageView[Board.BOARD_LSIZE];
-    private ObjectAnimator[] mAnimators = new ObjectAnimator[Board.BOARD_LSIZE];
     private BoardValue mValidMoveFilter;
 }
