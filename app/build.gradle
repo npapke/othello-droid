@@ -4,11 +4,11 @@ apply plugin: 'io.fabric'
 
 
 android {
-    compileSdkVersion 21
+    compileSdkVersion 26
     defaultConfig {
         applicationId "ca.provenpath.othello"
-        minSdkVersion 19
-        targetSdkVersion 21
+        minSdkVersion 25
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
     }
@@ -27,7 +27,8 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.android.support:appcompat-v7:21.0.3'
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support:support-fragment:26.1.0'
     implementation files('libs/gson-2.3.1.jar')
     implementation 'junit:junit:4.12'
     implementation 'com.crashlytics.sdk.android:crashlytics:2.9.3'

@@ -23,4 +23,9 @@
     <string name="help_url">https://en.wikipedia.org/wiki/Reversi</string>
     <string name="action_exit">Exit</string>
 
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="white">White</string>
+    <string name="black">Black</string>
+
 </resources>

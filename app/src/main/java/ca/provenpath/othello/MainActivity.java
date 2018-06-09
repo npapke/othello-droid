@@ -28,18 +28,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
-import android.widget.TextView;
-import android.widget.Toast;
-
-import java.util.Observable;
-import java.util.Observer;
 
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
@@ -54,7 +50,7 @@ import ca.provenpath.othello.game.StrategyFactory;
 import ca.provenpath.othello.game.observer.GameState;
 
 
-public class MainActivity extends ActionBarActivity
+public class MainActivity extends AppCompatActivity
 {
     public final static String TAG = MainActivity.class.getName();
 
@@ -82,6 +78,7 @@ public class MainActivity extends ActionBarActivity
         }
 
         setContentView( R.layout.activity_main );
+        setSupportActionBar( findViewById( R.id.toolbar ) );
 
         mBoardAdaptor = new BoardAdapter( this );
         GridView gridview = (GridView) findViewById( R.id.gridview );
@@ -404,67 +401,18 @@ public class MainActivity extends ActionBarActivity
 
     private void updateDisplay( GameExecutor executor )
     {
-        // TODO make this translatable
-        TextView messageView = (TextView) findViewById( R.id.message );
+        GameStatusFragment statusFragment =
+                (GameStatusFragment) getSupportFragmentManager().findFragmentById( R.id.status_fragment );
+        statusFragment.update( executor );
 
         findViewById( R.id.undo ).setEnabled( mLastMoveExecutorSerial != null );
 
         if (executor == null)
         {
-            messageView.setText( "Select 'New Game' to start" );
-
             mBoardAdaptor.redraw( null, BoardValue.EMPTY );
         }
         else
         {
-            StringBuilder buf = new StringBuilder();
-
-            int blackScore = executor.getBoard().countBoardValues( BoardValue.BLACK );
-            int whiteScore = executor.getBoard().countBoardValues( BoardValue.WHITE );
-
-            buf.append( String.format( "%d remaining, score %d - %d.\n",
-                    61 - mExecutor.getMoveNumber(),
-                    blackScore,
-                    whiteScore ) );
-
-            Player player = executor.getNextPlayer();
-
-            switch (executor.getState())
-            {
-                case TURN_PLAYER_0:
-                case TURN_PLAYER_1:
-                    if (player != null)
-                    {
-                        if (player.isComputer())
-                        {
-                            buf.append( "Processing for " + player.getColor().name() );
-                        }
-                        else
-                        {
-                            buf.append( player.getColor().name() + ", your turn." );
-                        }
-                    }
-                    else
-                    {
-                        buf.append( "missing player" );
-                    }
-                    break;
-
-                case GAME_OVER:
-                {
-                    // Toast.makeText( MainActivity.this, "Game over", Toast.LENGTH_SHORT ).show();
-                    if (blackScore > whiteScore)
-                        buf.append( "BLACK wins" );
-                    else if (blackScore < whiteScore)
-                        buf.append( "WHITE wins" );
-                    else
-                        buf.append( "Tied game." );
-                    break;
-                }
-            }
-
-            messageView.setText( buf.toString() );
-
             showValidMoves( executor );
         }
     }
