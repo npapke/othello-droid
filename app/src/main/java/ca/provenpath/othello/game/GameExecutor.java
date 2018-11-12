@@ -49,8 +49,10 @@ public class GameExecutor extends Observable
     {
         setState( GameState.GAME_OVER );
 
-        player[0].interruptMove();
-        player[1].interruptMove();
+        if (player[0] != null)
+            player[0].interruptMove();
+        if (player[1] != null)
+            player[1].interruptMove();
 
         setChanged();
         notifyObservers( this );

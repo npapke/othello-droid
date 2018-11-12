@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar( findViewById( R.id.toolbar ) );
 
         mBoardAdaptor = new BoardAdapter( this );
-        GridView gridview = (GridView) findViewById( R.id.gridview );
+        GridView gridview = findViewById( R.id.gridview );
         gridview.setAdapter( mBoardAdaptor );
 
         gridview.setOnItemClickListener( new AdapterView.OnItemClickListener()
@@ -190,6 +190,8 @@ public class MainActivity extends AppCompatActivity
 
         super.onRestoreInstanceState( bundle );
     }
+
+
 
     /*
      * ====================================================================
@@ -403,17 +405,21 @@ public class MainActivity extends AppCompatActivity
     {
         GameStatusFragment statusFragment =
                 (GameStatusFragment) getSupportFragmentManager().findFragmentById( R.id.status_fragment );
-        statusFragment.update( executor );
 
-        findViewById( R.id.undo ).setEnabled( mLastMoveExecutorSerial != null );
+        if (statusFragment != null)
+        {
+            statusFragment.update( executor );
 
-        if (executor == null)
-        {
-            mBoardAdaptor.redraw( null, BoardValue.EMPTY );
-        }
-        else
-        {
-            showValidMoves( executor );
+            findViewById( R.id.undo ).setEnabled( mLastMoveExecutorSerial != null );
+
+            if (executor == null)
+            {
+                mBoardAdaptor.redraw( null, BoardValue.EMPTY );
+            }
+            else
+            {
+                showValidMoves( executor );
+            }
         }
     }
 

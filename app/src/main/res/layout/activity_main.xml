@@ -1,7 +1,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     >
 
@@ -19,16 +19,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
-    <GridView
+    <ca.provenpath.othello.SquareGridView
         android:id="@+id/gridview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:gravity="center"
         android:horizontalSpacing="0dp"
-        android:numColumns="8"
-        android:stretchMode="spacingWidthUniform"
         android:verticalSpacing="0dp"
+        android:numColumns="8"
+        android:stretchMode="columnWidth"
         />
 
     <RelativeLayout
@@ -41,7 +39,6 @@
             android:id="@+id/newgame"
             android:layout_width="@dimen/main_activity_button_width"
             android:layout_height="@dimen/main_activity_button_height"
-            android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
             android:layout_gravity="left"
             android:enabled="true"
@@ -52,7 +49,6 @@
             android:layout_width="@dimen/main_activity_button_width"
             android:layout_height="@dimen/main_activity_button_height"
             android:layout_alignParentEnd="true"
-            android:layout_alignParentRight="true"
             android:layout_gravity="right"
             android:enabled="true"
             android:text="@string/undo"/>

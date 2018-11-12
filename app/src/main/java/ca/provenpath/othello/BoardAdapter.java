@@ -20,13 +20,10 @@
 package ca.provenpath.othello;
 
 import android.animation.ObjectAnimator;
-import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.BounceInterpolator;
 import android.widget.Adapter;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
@@ -34,7 +31,6 @@ import android.widget.ImageView;
 
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
-import ca.provenpath.othello.game.Player;
 
 /**
  * Created by npapke on 2/22/15.
@@ -93,18 +89,21 @@ public class BoardAdapter extends BaseAdapter
             // if it's not recycled, initialize some attributes
             imageView = new ImageView( mContext );
 
-            int size = Math.min( parent.getHeight(), parent.getWidth() ) / 8;
-
-            // Log.v( TAG, String.format( "Parent size: %d x %d", parent.getWidth(), parent.getHeight() ) );
-
-            imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
-            imageView.setScaleType( ImageView.ScaleType.FIT_XY );
-            imageView.setPadding( 0, 0, 0, 0 );
         }
         else
         {
             imageView = (ImageView) convertView;
         }
+
+        int size = Math.min( parent.getHeight(), parent.getWidth() ) / 8;
+
+        //Log.v( TAG, String.format( "Position: %d, Parent size: %d x %d, Tile size: %d",
+        //    position, parent.getWidth(), parent.getHeight(), size ) );
+
+        imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
+        imageView.setScaleType( ImageView.ScaleType.FIT_XY );
+        imageView.setPadding( 0, 0, 0, 0 );
+        imageView.setAdjustViewBounds( true );
 
         BoardValue bv = mBoard.getLvalue( position );
         int resource = resourceForCell( bv );
