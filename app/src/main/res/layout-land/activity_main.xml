@@ -26,12 +26,10 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:horizontalSpacing="0dp"
-            android:numColumns="8"
-            android:columnWidth="10px"
-            android:stretchMode="columnWidth"
             android:verticalSpacing="0dp"
-            android:layout_gravity="right"
-            tools:stretchMode="none"/>
+            android:numColumns="8"
+            android:stretchMode="columnWidth"
+            />
 
         <LinearLayout
             android:layout_width="match_parent"

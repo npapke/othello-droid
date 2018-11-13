@@ -159,6 +159,21 @@ public class Position implements Cloneable
      * Adjust a position.
      * <p>
      * Note that resultant position may be invalid.
+     * @param start starting position
+     * @param linearOffset
+     * @return an updated position
+     */
+    public static int add( int start, int linearOffset )
+    {
+        int newLinear = start + linearOffset;
+
+        return isAdjacent( start, newLinear ) ? newLinear : -1;
+    }
+
+    /**
+     * Adjust a position.
+     * <p>
+     * Note that resultant position may be invalid.
      * @param linearOffset
      * @return an updated position
      */
@@ -222,6 +237,15 @@ public class Position implements Cloneable
         return getLinear() % Board.BOARD_SIZE;
     }
 
+
+    /**
+     * Is the position contained on the board?
+     * @return true iff position is valid
+     */
+    public static boolean isValid( int pos )
+    {
+        return pos >= 0 && pos < (Board.BOARD_SIZE * Board.BOARD_SIZE);
+    }
 
     /**
      * Is the position contained on the board?

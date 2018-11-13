@@ -77,8 +77,9 @@ public class ComputerPlayer extends Player
         Log.i( TAG, "makeMove: " + result.getBestPosition() + ", value: " + result.getValue() );
         long duration = stats.duration();
         Log.i( TAG, String.format( "%d boards evaluated in %d ms. %d boards/sec",
-                stats.getBoardsEvaluated(), duration,
-                duration != 0 ? stats.getBoardsEvaluated() * 1000 / duration : 999999 ) );
+                stats.getBoardsEvaluated(),
+                duration,
+                duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999 ) );
 
         board.makeMove( new Move( color, result.getBestPosition() ) );
     }
@@ -140,7 +141,7 @@ public class ComputerPlayer extends Player
             {
                 // Always the maximizing player
                 Board copyOfBoard = (Board) board.clone();
-                copyOfBoard.makeMove( new Move( player, candidate.getBestPosition() ) );
+                copyOfBoard.makeMove( player, candidate.getBestPosition().getLinear() );
 
                 int result = minimaxAB( copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats );
 
@@ -255,28 +256,24 @@ public class ComputerPlayer extends Player
 
         boolean validMoveSeen = false;
         int value;
-        Position bestPos = new Position();
 
         if (player == color)
         {
             value = Integer.MIN_VALUE;
 
-            for (Position pos : board)
+            for (int pos = 0; Position.isValid( pos ); pos++)
             {
-                Move m = new Move( player, pos );
-
-                if (board.isValidMove( m ))
+                if (board.isValidMove( player, pos ))
                 {
                     validMoveSeen = true;
 
                     Board copyOfBoard = (Board) board.clone();
-                    copyOfBoard.makeMove( m );
+                    copyOfBoard.makeMove( player, pos );
 
                     int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats );
                     if (result > value)
                     {
                         value = result;
-                        bestPos.copy( pos );
                     }
 
                     alpha = Math.max( value, alpha );
@@ -292,22 +289,19 @@ public class ComputerPlayer extends Player
         {
             value = Integer.MAX_VALUE;
 
-            for (Position pos : board)
+            for (int pos = 0; Position.isValid( pos ); pos++)
             {
-                Move m = new Move( player, pos );
-
-                if (board.isValidMove( m ))
+                if (board.isValidMove( player, pos ))
                 {
                     validMoveSeen = true;
 
                     Board copyOfBoard = (Board) board.clone();
-                    copyOfBoard.makeMove( m );
+                    copyOfBoard.makeMove( player, pos );
 
                     int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats );
                     if (result < value)
                     {
                         value = result;
-                        bestPos.copy( pos );
                     }
 
                     beta = Math.min( value, beta );

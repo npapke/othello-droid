@@ -100,6 +100,32 @@ public class Board implements Cloneable, Iterable<Position>
         updateValidMoves();
     }
 
+    /**
+     * Initialize the board from a string.
+     * Each character represents one board position.
+     * Valid characters are '.', 'b', 'w'.
+     * @param state
+     */
+    public Board( String state )
+    {
+        this();
+
+        int lpos = 0;
+        for ( char c : state.toCharArray() )
+        {
+            switch (c)
+            {
+                case '.': board[lpos] = EMPTY; break;
+                case 'b': board[lpos] = BLACK; break;
+                case 'w': board[lpos] = WHITE; break;
+            }
+
+            lpos++;
+        }
+
+        updateValidMoves();
+    }
+
 
     /**
      * Construct a board
@@ -108,7 +134,8 @@ public class Board implements Cloneable, Iterable<Position>
     public Board( Board other )
     {
         this.board = Arrays.copyOf( other.board, other.board.length );
-        this.lastMove = (other.lastMove == null) ? null : new Move( other.lastMove );
+        this.lastMovePos = other.lastMovePos;
+        this.lastMoveValue = other.lastMoveValue;
         this.serial = other.serial;
     }
 
@@ -167,14 +194,23 @@ public class Board implements Cloneable, Iterable<Position>
     }
 
 
-    /** 
+    /**
      * Determine if the specified move is valid on the board.
      * @param m the move to check
      * @return true if the move is valid, false otherwise
      */
     public boolean isValidMove( Move m )
     {
-        BoardValue cell = getValue( m.getPosition() );
+        return isValidMove( m.getValue(), m.getPosition().getLinear() );
+    }
+
+    /**
+     * Determine if the specified move is valid on the board.
+     * @return true if the move is valid, false otherwise
+     */
+    public boolean isValidMove( BoardValue player, int position )
+    {
+        BoardValue cell = getLvalue( position );
         switch (cell)
         {
             case BLACK:
@@ -186,10 +222,10 @@ public class Board implements Cloneable, Iterable<Position>
                 return true;
 
             case VALID_BLACK:
-                return m.getValue() == BoardValue.BLACK;
+                return player == BoardValue.BLACK;
 
             case VALID_WHITE:
-                return m.getValue() == BoardValue.WHITE;
+                return player == BoardValue.WHITE;
         }
 
         return false;
@@ -215,7 +251,7 @@ public class Board implements Cloneable, Iterable<Position>
 
             for (int direction : adjacentOffsetTable)
             {
-                BoardValue valid = checkRun( direction, new Position( lpos ) );
+                BoardValue valid = checkRun( direction, lpos );
                 if (valid.isValidMove())
                 {
                     if (cell.isEmpty())
@@ -246,27 +282,28 @@ public class Board implements Cloneable, Iterable<Position>
      *         BoardValue.VALID_BLACK when valid for black only,
      *         BoardValue.VALID_BOTH when valid for either player
      */
-    private BoardValue checkRun( int direction, Position pos )
+    private BoardValue checkRun( int direction, int pos )
     {
         Assert.isTrue( direction != 0 );
 
-        Position cur = new Position( pos );
+        int cur = pos;
 
         BoardValue target = BoardValue.EMPTY;
 
         for (;;)
         {
-            cur.add( direction );
+            cur = Position.add( cur, direction );
 
-            if (!cur.isValid())
+            if (!Position.isValid( cur ))
             {
                 // past the edge of the board
                 return BoardValue.EMPTY;
             }
 
-            BoardValue curBoardValue = getValue( cur );
+            BoardValue curBoardValue = getLvalue( cur );
 
-            if (!curBoardValue.isPlayer())      // empty or a valid move
+            // Always expect a run of non-empty cells
+            if (!curBoardValue.isPlayer())
             {
                 return BoardValue.EMPTY;
             }
@@ -276,9 +313,12 @@ public class Board implements Cloneable, Iterable<Position>
                 // first cell after start
                 target = curBoardValue.otherPlayer();
             }
-            else if (curBoardValue == target)
+            else
             {
-                return (target == BoardValue.BLACK) ? BoardValue.VALID_BLACK : BoardValue.VALID_WHITE;
+                if (curBoardValue == target)
+                {
+                    return (target == BoardValue.BLACK) ? BoardValue.VALID_BLACK : BoardValue.VALID_WHITE;
+                }
             }
         }
     }
@@ -295,9 +335,9 @@ public class Board implements Cloneable, Iterable<Position>
      * @param p position
      * @return [0,4]
      */
-    public int countProtected( Position p )
+    public int countProtected( int p )
     {
-        BoardValue me = getValue( p );
+        BoardValue me = getLvalue( p );
 
         if (!me.isPlayer())
         {
@@ -352,33 +392,40 @@ public class Board implements Cloneable, Iterable<Position>
 
     /**
      * Applies the specified move to the board
-     * @param m the move to apply
      */
     public void makeMove( Move m )
     {
+        makeMove( m.getValue(), m.getPosition().getLinear() );
+    }
+
+    /**
+     * Applies the specified move to the board
+     */
+    public void makeMove( BoardValue thisPlayer, int pos )
+    {
         // Log.v( TAG, "makeMove: " + m );
 
-        Assert.isTrue( isValidMove( m ), "Invalid move" );
+        Assert.isTrue( isValidMove( thisPlayer, pos ), "Invalid move" );
 
-        BoardValue thisPlayer = m.getValue();
-        setBoardValue( m );
-        lastMove = m;
+        setBoardValue( pos, thisPlayer );
+        lastMovePos = pos;
+        lastMoveValue = thisPlayer;
 
         for (int direction : adjacentOffsetTable)
         {
-            if (isFlippable( direction, m ))
+            if (isFlippable( direction, thisPlayer, pos ))
             {
-                Position cur = new Position( m.getPosition() );
+                int cur = pos;
 
                 boolean done = false;
 
                 while (!done)
                 {
-                    cur.add( direction );
+                    cur = Position.add( cur, direction );
 
-                    Assert.isTrue( cur.isValid() );
+                    Assert.isTrue( Position.isValid( cur ) );
 
-                    BoardValue curBoardValue = getValue( cur );
+                    BoardValue curBoardValue = getLvalue( cur );
 
                     if (curBoardValue == thisPlayer)
                     {
@@ -389,7 +436,7 @@ public class Board implements Cloneable, Iterable<Position>
                     {
                         // Internal consistency check.  We are flipping
                         // existing pieces not occupying empty cells.
-                        Assert.isTrue( !isEmptyBoardValue( cur ), "Position not occupied" );
+                        Assert.isTrue( curBoardValue.isPlayer(), "Position not occupied" );
 
                         setBoardValue( cur, thisPlayer );
                     }
@@ -537,6 +584,16 @@ public class Board implements Cloneable, Iterable<Position>
      * @param p position of cell to set
      * @param c value to set the cell to
      */
+    protected void setBoardValue( int p, BoardValue c )
+    {
+        board[p] = c;
+    }
+
+    /**
+     * Set a cell
+     * @param p position of cell to set
+     * @param c value to set the cell to
+     */
     protected void setBoardValue( Position p, BoardValue c )
     {
         board[p.getLinear()] = c;
@@ -606,25 +663,24 @@ public class Board implements Cloneable, Iterable<Position>
      * Determine if there are any flippable pieces for the Move
      * in the specified direction
      */
-    private boolean isFlippable( int direction, Move m )
+    private boolean isFlippable( int direction, BoardValue thisPlayer, int pos )
     {
         Assert.isTrue( direction != 0 );
 
-        final BoardValue thisPlayer = m.getValue();
-        Position cur = new Position( m.getPosition() );
+        int cur = pos;
         int otherPieces = 0;
 
         for (;;)
         {
-            cur.add( direction );
+            cur = Position.add( cur, direction );
 
-            if (!cur.isValid())
+            if (!Position.isValid( cur ))
             {
                 // past the edge of the board
                 return false;
             }
 
-            BoardValue curBoardValue = getValue( cur );
+            BoardValue curBoardValue = getLvalue( cur );
 
             if (curBoardValue == thisPlayer)
             {
@@ -653,22 +709,22 @@ public class Board implements Cloneable, Iterable<Position>
      * @param pos starting position
      * @return true iff pieces are of the same color
      */
-    private BoardValue findColorChange( int direction, Position pos )
+    private BoardValue findColorChange( int direction, int pos )
     {
-        final BoardValue thisPlayer = getValue( pos );
-        Position cur = new Position( pos );
+        final BoardValue thisPlayer = getLvalue( pos );
+        int cur = pos;
 
         for (;;)
         {
-            cur.add( direction );
+            cur = Position.add( cur, direction );
 
-            if (!cur.isValid())
+            if (!Position.isValid( cur ))
             {
                 // past the edge of the board
                 return thisPlayer;
             }
 
-            BoardValue curBoardValue = getValue( cur );
+            BoardValue curBoardValue = getLvalue( cur );
 
             if (curBoardValue != thisPlayer)
             {
@@ -680,10 +736,11 @@ public class Board implements Cloneable, Iterable<Position>
 
     public Move getLastMove()
     {
-        return lastMove;
+        return new Move( lastMoveValue, new Position( lastMovePos ) );
     }
 
-    Move lastMove;
+    int lastMovePos;
+    BoardValue lastMoveValue;
 
     /**
      * Iterator across the entire board

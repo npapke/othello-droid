@@ -43,27 +43,27 @@ public class AdaptiveStrategy extends Strategy
 
         BoardValue otherPlayer = player.otherPlayer();
 
-        for (Position pos : board)
+        for (int lpos = 0; Position.isValid( lpos ); lpos++)
         {
-            BoardValue curCell = board.getValue( pos );
+            BoardValue curCell = board.getLvalue( lpos );
 
             if (curCell == player)
             {
                 score++;
                 numMoves++;
-                protectedScore += calcProtectedScore( board.countProtected( pos ));
+                protectedScore += calcProtectedScore( board.countProtected( lpos ));
             }
             else if (curCell == otherPlayer)
             {
                 score--;
                 numMoves++;
-                protectedScore -= calcProtectedScore( board.countProtected( pos ));
+                protectedScore -= calcProtectedScore( board.countProtected( lpos ));
             }
-            else if (board.isValidMove( new Move( player, pos ) ))
+            else if (board.isValidMove( player, lpos ) )
             {
                 freedom++;
             }
-            else if (board.isValidMove( new Move( otherPlayer, pos ) ))
+            else if (board.isValidMove( otherPlayer, lpos ) )
             {
                 threats++;
             }
