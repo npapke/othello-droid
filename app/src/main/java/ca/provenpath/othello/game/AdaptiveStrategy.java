@@ -35,7 +35,8 @@ public class AdaptiveStrategy extends Strategy
     @Override
     public int determineBoardValue( BoardValue player, Board board )
     {
-        int score = 0;
+        int scoreMe = 0;
+        int scoreOther = 0;
         int protectedScore = 0;
         int freedom = 0;
         int threats = 0;
@@ -49,24 +50,41 @@ public class AdaptiveStrategy extends Strategy
 
             if (curCell == player)
             {
-                score++;
+                scoreMe++;
                 numMoves++;
-                protectedScore += calcProtectedScore( board.countProtected( lpos ));
+                protectedScore += calcProtectedScore( board.countProtected( lpos ), lpos );
             }
             else if (curCell == otherPlayer)
             {
-                score--;
+                scoreOther++;
                 numMoves++;
-                protectedScore -= calcProtectedScore( board.countProtected( lpos ));
+                // protectedScore -= calcProtectedScore( board.countProtected( lpos ), lpos );
             }
-            else if (board.isValidMove( player, lpos ) )
+            else if (board.isValidMove( player, lpos ))
             {
                 freedom++;
             }
-            else if (board.isValidMove( otherPlayer, lpos ) )
+            else if (board.isValidMove( otherPlayer, lpos ))
             {
                 threats++;
             }
+        }
+
+        // A guaranteed win/loss
+        // TBD does this generalize?
+        if (scoreMe == 0)
+        {
+            return Integer.MIN_VALUE;
+        }
+        else if (scoreOther == 0)
+        {
+            return Integer.MAX_VALUE;
+        }
+
+        // nobody has a move
+        if (freedom == 0 && threats == 0)
+        {
+            return determineFinalScore( player, board );
         }
 
         int finalScore;
@@ -75,23 +93,23 @@ public class AdaptiveStrategy extends Strategy
         threats = scale( threats, 0, 16 );  // a large max is not realistic
 
         // Allow scores to go negative, i.e., [0,100] -> [-100,100]
-        score = scale2( score, -numMoves, numMoves );
-        protectedScore = scale2( protectedScore, -numMoves * 10, numMoves * 10 );
+        int score = scale2( scoreMe - scoreOther, -numMoves, numMoves );
+        protectedScore = scale2( protectedScore, -numMoves * 5, numMoves * 5 );
 
         /*
          * The following is conjecture
          */
         if (numMoves < 16)
         {
-            finalScore = (freedom * 30) + (protectedScore * 40) + (score * 40) - (threats * 10);
+            finalScore = (freedom * 30) + (protectedScore * 40) + (score * 20) - (threats * 10);
         }
         else if (numMoves < 50)
         {
-            finalScore = (freedom * 20) + (protectedScore * 70) + (score * 30) - (threats * 20);
+            finalScore = (freedom * 20) + (protectedScore * 40) + (score * 20) - (threats * 20);
         }
         else if (numMoves < 60)
         {
-            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 70) - (threats * 20);
+            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 50) - (threats * 20);
         }
         else if (numMoves < 64)
         {
@@ -138,13 +156,9 @@ public class AdaptiveStrategy extends Strategy
      * @param count protected axis count
      * @return
      */
-    private int calcProtectedScore( int count )
+    private int calcProtectedScore( int count, int pos )
     {
-        switch (count)
-        {
-            case 4: return 10;
-            case 3: return 2;
-            default: return 0;
-        }
+        //return (count >= 3 ? (count - 2) * 2 : 0) + (Position.isEdge( pos ) ? 2 : 0);
+        return (count >= 3 ? (count - 2) * 2 : 0) + (Position.isEdge( pos ) ? 4 : 0);
     }
 }

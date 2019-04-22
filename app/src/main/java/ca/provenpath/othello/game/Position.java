@@ -255,4 +255,18 @@ public class Position implements Cloneable
     {
         return this.linear >= 0 && this.linear < (Board.BOARD_SIZE * Board.BOARD_SIZE);
     }
+
+    /**
+     * Is the position at the edge of the board
+     * @param pos position
+     * @return true iff on edge
+     */
+    public static boolean isEdge( int pos )
+    {
+        int mod = pos % Board.BOARD_SIZE;
+        int div = pos / Board.BOARD_SIZE;
+
+        return mod == 0 || mod == (Board.BOARD_SIZE - 1)
+            || div == 0 || div == (Board.BOARD_SIZE - 1);
+    }
 }
