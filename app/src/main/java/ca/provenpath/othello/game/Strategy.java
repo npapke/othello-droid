@@ -38,9 +38,9 @@ public abstract class Strategy
         int score = 0;
         BoardValue otherPlayer = player.otherPlayer();
 
-        for (Position pos : board)
+        for (int pos = 0; Position.isValid( pos ); pos++)
         {
-            BoardValue curCell = board.getValue( pos );
+            BoardValue curCell = board.getLvalue( pos );
 
             if (curCell == player)
             {
@@ -52,7 +52,7 @@ public abstract class Strategy
             }
         }
 
-        // Scale the value to ensure that terminal boards are more important
+        // Translate the value to ensure that terminal boards are more important
         // than non-terminal boards
         return (score > 0) ? (100000 + score * 100) : (-100000 + score * 100);
     }

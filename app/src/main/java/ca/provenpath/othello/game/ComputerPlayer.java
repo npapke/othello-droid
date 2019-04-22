@@ -402,7 +402,6 @@ public class ComputerPlayer extends Player
 
     /**
      * Helper for performance statistics.  Thread-safe.
-     */
     private class Stats
     {
         private long start = System.currentTimeMillis();
@@ -416,6 +415,32 @@ public class ComputerPlayer extends Player
         public int getBoardsEvaluated()
         {
             return boardsEvaluated.get();
+        }
+
+        public long duration()
+        {
+            return System.currentTimeMillis() - start;
+        }
+    }
+     */
+
+
+    /**
+     * Helper for performance statistics.  Not thread-safe.
+     */
+    private class Stats
+    {
+        private long start = System.currentTimeMillis();
+        private int boardsEvaluated = 0;
+
+        public void incBoard()
+        {
+            boardsEvaluated++;
+        }
+
+        public int getBoardsEvaluated()
+        {
+            return boardsEvaluated;
         }
 
         public long duration()
