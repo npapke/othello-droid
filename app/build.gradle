@@ -1,3 +1,7 @@
+plugins {
+    id "io.spring.dependency-management" version "1.0.6.RELEASE"
+}
+
 apply plugin: 'com.android.application'
 // For Firebase crashlytics
 //apply plugin: 'io.fabric'
@@ -7,7 +11,7 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "ca.provenpath.othello"
-        minSdkVersion 25
+        minSdkVersion 26
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
@@ -24,11 +28,18 @@ android {
     }
 }
 
+dependencyManagement {
+     imports {
+          mavenBom "io.projectreactor:reactor-bom:Bismuth-RELEASE"
+     }
+}
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support:support-fragment:26.1.0'
     implementation files('libs/gson-2.3.1.jar')
+    implementation 'io.projectreactor:reactor-core'
     testImplementation 'junit:junit:4.12'
     //implementation 'com.crashlytics.sdk.android:crashlytics:2.9.3'
     //implementation 'com.google.firebase:firebase-crash:16.0.0'

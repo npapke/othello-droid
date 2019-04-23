@@ -84,15 +84,10 @@ public class MainActivity extends AppCompatActivity
         GridView gridview = findViewById( R.id.gridview );
         gridview.setAdapter( mBoardAdaptor );
 
-        gridview.setOnItemClickListener( new AdapterView.OnItemClickListener()
-        {
-            @Override
-            public void onItemClick( AdapterView<?> parent, View v, int position, long id )
-            {
-                // Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
-                attemptMove( position );
-            }
-        } );
+        gridview.setOnItemClickListener((parent, v, position, id) -> {
+            // Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
+            attemptMove( position );
+        });
 
         /*
         gridview.setOnItemLongClickListener( new AdapterView.OnItemLongClickListener()
@@ -107,24 +102,8 @@ public class MainActivity extends AppCompatActivity
         */
 
 
-        findViewById( R.id.undo ).setOnClickListener( new View.OnClickListener()
-        {
-            @Override
-            public void onClick( View v )
-            {
-                undoGame();
-            }
-        } );
-
-
-        findViewById( R.id.newgame ).setOnClickListener( new View.OnClickListener()
-        {
-            @Override
-            public void onClick( View v )
-            {
-                newGame();
-            }
-        } );
+        findViewById( R.id.undo ).setOnClickListener(v -> undoGame());
+        findViewById( R.id.newgame ).setOnClickListener(v -> newGame());
 
         /*
          * Process requests on the UI thread.

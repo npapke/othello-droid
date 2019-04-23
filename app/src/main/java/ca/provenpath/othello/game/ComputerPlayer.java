@@ -22,11 +22,10 @@ package ca.provenpath.othello.game;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
+import reactor.core.publisher.Flux;
 
 import java.util.PriorityQueue;
-import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A computer player.  Automatically determines the optimal move for
@@ -58,9 +57,10 @@ public class ComputerPlayer extends Player
      * Make a move on the board.
      *
      * @param board the board to move on
+     * @return
      */
     @Override
-    public void makeMove( Board board )
+    public Flux<MoveNotification> makeMove(Board board )
     {
         Assert.notNull( color );
         Assert.notNull( strategy );
@@ -81,7 +81,8 @@ public class ComputerPlayer extends Player
                 duration,
                 duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999 ) );
 
-        board.makeMove( new Move( color, result.getBestPosition() ) );
+        return Flux.just(
+                new MoveNotification(true, new Move( color, result.getBestPosition() ) ) );
     }
 
     @Override

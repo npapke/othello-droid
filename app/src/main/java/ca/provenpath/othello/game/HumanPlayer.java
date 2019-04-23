@@ -20,6 +20,7 @@
 package ca.provenpath.othello.game;
 
 import android.util.Log;
+import reactor.core.publisher.Flux;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -27,70 +28,54 @@ import java.util.concurrent.BlockingQueue;
 /**
  * Created by npapke on 2/25/15.
  */
-public class HumanPlayer extends Player
-{
+public class HumanPlayer extends Player {
     public final static String TAG = HumanPlayer.class.getName();
 
-    public HumanPlayer( BoardValue color )
-    {
-        super( color );
+    public HumanPlayer(BoardValue color) {
+        super(color);
     }
 
-    public HumanPlayer( String serial )
-    {
-        super( serial );
+    public HumanPlayer(String serial) {
+        super(serial);
     }
 
     @Override
-    public void makeMove( Board board )
-    {
+    public Flux<MoveNotification> makeMove(Board board) {
         nextMove.clear();   // no stale moves
 
-        for (;;)
-        {
+        for (; ; ) {
             HumanMove humanMove = waitForMove();
             Move boardMove = humanMove.getMove();
             if (boardMove == null)
-                return;
+                return Flux.empty();
 
-            if (board.isValidMove( boardMove ))
-            {
-                Log.i( TAG, "Applying move " + boardMove );
+            if (board.isValidMove(boardMove)) {
+                Log.i(TAG, "Applying move " + boardMove);
 
-                board.makeMove( boardMove );
-                break;
-            }
-            else
-            {
-                Log.d( TAG, "Invalid move " + boardMove );
+                return Flux.just(new MoveNotification(true, boardMove));
+            } else {
+                Log.d(TAG, "Invalid move " + boardMove);
             }
         }
     }
 
     @Override
-    public void interruptMove()
-    {
+    public void interruptMove() {
         // Signal the end
-        nextMove.offer( new HumanMove() );
+        nextMove.offer(new HumanMove());
     }
 
-    public void attemptMove( int lvalue )
-    {
-        Log.d( TAG, "Move to " + lvalue );
+    public void attemptMove(int lvalue) {
+        Log.d(TAG, "Move to " + lvalue);
 
-        nextMove.offer( new HumanMove( lvalue ) );
+        nextMove.offer(new HumanMove(lvalue));
     }
 
-    private HumanMove waitForMove()
-    {
-        for (;;)
-        {
-            try
-            {
-                return nextMove.take( );
-            }
-            catch (InterruptedException e)
-            {
+    private HumanMove waitForMove() {
+        for (; ; ) {
+            try {
+                return nextMove.take();
+            } catch (InterruptedException e) {
             }
         }
     }
@@ -98,25 +83,21 @@ public class HumanPlayer extends Player
     /**
      * Just an apparatus to signal "no move"
      */
-    private class HumanMove
-    {
-        public HumanMove()
-        {
+    private class HumanMove {
+        public HumanMove() {
             mMove = null;
         }
 
-        public HumanMove( int lvalue )
-        {
-            mMove = new Move( getColor(), new Position( lvalue ) );
+        public HumanMove(int lvalue) {
+            mMove = new Move(getColor(), new Position(lvalue));
         }
 
-        public Move getMove()
-        {
+        public Move getMove() {
             return mMove;
         }
 
         private Move mMove;
     }
 
-    private transient BlockingQueue<HumanMove> nextMove = new ArrayBlockingQueue< HumanMove >( 1 );
+    private transient BlockingQueue<HumanMove> nextMove = new ArrayBlockingQueue<HumanMove>(1);
 }

@@ -22,32 +22,31 @@ package ca.provenpath.othello.game;
 import android.util.Log;
 
 import ca.provenpath.othello.game.observer.GameState;
+import reactor.core.publisher.Flux;
 
 import java.util.Observable;
 
 /**
  * Execute a game.  Coordinate the game board and players.
+ *
  * @author npapke
  */
-public class GameExecutor extends Observable
-{
+public class GameExecutor extends Observable {
     public final static String TAG = GameExecutor.class.getName();
 
-    public void newGame()
-    {
-        Log.i( TAG, "newGame" );
+    public void newGame() {
+        Log.i(TAG, "newGame");
 
         board = new Board();
         moveNumber = 1;
         state = GameState.TURN_PLAYER_0;
 
         setChanged();
-        notifyObservers( this );
+        notifyObservers(this);
     }
 
-    public void endGame()
-    {
-        setState( GameState.GAME_OVER );
+    public void endGame() {
+        setState(GameState.GAME_OVER);
 
         if (player[0] != null)
             player[0].interruptMove();
@@ -55,11 +54,10 @@ public class GameExecutor extends Observable
             player[1].interruptMove();
 
         setChanged();
-        notifyObservers( this );
+        notifyObservers(this);
     }
 
-    public boolean isConsistent()
-    {
+    boolean isConsistent() {
         return (board != null) && board.isConsistent() && (player[0] != null) && (player[1] != null);
     }
 
@@ -68,60 +66,56 @@ public class GameExecutor extends Observable
      * Execute one turn on the board.
      * The <code>Player</code>s will be asked to make the actual move.
      */
-    public void executeOneTurn()
-    {
-        Log.d( TAG, "executeOneTurn: state=" + state );
+    public void executeOneTurn() {
+        Log.d(TAG, "executeOneTurn: state=" + state);
 
-        Assert.notNull( isConsistent() );
+        Assert.isTrue(isConsistent());
 
-        switch (state)
-        {
+        switch (state) {
             case TURN_PLAYER_0:
-                player[0].makeMove( board );
+                player[0].makeMove(board)
+                        .doOnNext(n -> board.makeMove(n.getMove()))
+                        .blockLast();
+
                 moveNumber++;
-                if (board.hasValidMove( player[1].getColor() ))
-                {
-                    setState( GameState.TURN_PLAYER_1 );
-                }
-                else if (!board.hasValidMove( player[0].getColor() ))
-                {
-                    setState( GameState.GAME_OVER );
+                if (board.hasValidMove(player[1].getColor())) {
+                    setState(GameState.TURN_PLAYER_1);
+                } else if (!board.hasValidMove(player[0].getColor())) {
+                    setState(GameState.GAME_OVER);
                 }
                 break;
 
             case TURN_PLAYER_1:
-                player[1].makeMove( board );
+                player[1].makeMove(board)
+                        .doOnNext(n -> board.makeMove(n.getMove()))
+                    .blockLast();
                 moveNumber++;
-                if (board.hasValidMove( player[0].getColor() ))
-                {
-                    setState( GameState.TURN_PLAYER_0 );
-                }
-                else if (!board.hasValidMove( player[1].getColor() ))
-                {
-                    setState( GameState.GAME_OVER );
+                if (board.hasValidMove(player[0].getColor())) {
+                    setState(GameState.TURN_PLAYER_0);
+                } else if (!board.hasValidMove(player[1].getColor())) {
+                    setState(GameState.GAME_OVER);
                 }
                 break;
 
             case INACTIVE:
-                throw new IllegalStateException( "Game not started" );
+                throw new IllegalStateException("Game not started");
 
             default:
-                Log.w( TAG, "executeOneTurn: unexpectedly called while in state=" + state );
+                Log.w(TAG, "executeOneTurn: unexpectedly called while in state=" + state);
                 break;
         }
 
         setChanged();
-        notifyObservers( this );
+        notifyObservers(this);
     }
 
     /**
      * Update state and prevent from being overwritten when game has ended
+     *
      * @param state
      */
-    private void setState( GameState state )
-    {
-        if (this.state != GameState.GAME_OVER)
-        {
+    private void setState(GameState state) {
+        if (this.state != GameState.GAME_OVER) {
             this.state = state;
         }
     }
@@ -129,10 +123,8 @@ public class GameExecutor extends Observable
     /**
      * Gets the player that will make the next move.
      */
-    public Player getNextPlayer()
-    {
-        switch (state)
-        {
+    public Player getNextPlayer() {
+        switch (state) {
             case TURN_PLAYER_0:
                 return player[0];
             case TURN_PLAYER_1:
@@ -153,8 +145,7 @@ public class GameExecutor extends Observable
      *
      * @return the value of board
      */
-    public Board getBoard()
-    {
+    public Board getBoard() {
         return board;
     }
 
@@ -167,13 +158,12 @@ public class GameExecutor extends Observable
      *
      * @return the value of state
      */
-    public GameState getState()
-    {
+    public GameState getState() {
         return state;
     }
 
 
-    protected Player[] player = new Player[ 2 ];
+    protected Player[] player = new Player[2];
 
 
     /**
@@ -181,8 +171,7 @@ public class GameExecutor extends Observable
      *
      * @return the value of player
      */
-    public Player[] getPlayer()
-    {
+    public Player[] getPlayer() {
         return player;
     }
 
@@ -193,8 +182,7 @@ public class GameExecutor extends Observable
      * @param index
      * @return the value of player at specified index
      */
-    public Player getPlayer( int index )
-    {
+    public Player getPlayer(int index) {
         return this.player[index];
     }
 
@@ -205,8 +193,7 @@ public class GameExecutor extends Observable
      * @param index
      * @param newPlayer new value of player at specified index
      */
-    public void setPlayer( int index, Player newPlayer )
-    {
+    public void setPlayer(int index, Player newPlayer) {
         if (this.player[index] != null)
             this.player[index].interruptMove();
 
@@ -222,8 +209,7 @@ public class GameExecutor extends Observable
      *
      * @return the value of moveNumber
      */
-    public int getMoveNumber()
-    {
+    public int getMoveNumber() {
         return moveNumber;
     }
 

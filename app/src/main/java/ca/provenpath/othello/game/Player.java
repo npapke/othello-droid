@@ -20,36 +20,63 @@
 package ca.provenpath.othello.game;
 
 
+import reactor.core.publisher.Flux;
+
 /**
  * Abstraction for a player of the game.
+ *
  * @author npapke
  */
-public class Player
-{
-    public Player( BoardValue color )
-    {
+public abstract class Player {
+    public class MoveNotification {
+        private boolean isFinal;
+        private Move move;
+
+        public MoveNotification(boolean isFinal, Move move) {
+            this.isFinal = isFinal;
+            this.move = move;
+        }
+
+        public boolean isFinal() {
+            return isFinal;
+        }
+
+        public void setFinal(boolean aFinal) {
+            isFinal = aFinal;
+        }
+
+        public Move getMove() {
+            return move;
+        }
+
+        public void setMove(Move move) {
+            this.move = move;
+        }
+    }
+
+    public Player(BoardValue color) {
         this.color = color;
     }
 
-    public Player( String serial )
-    {
-        this.color = BoardValue.valueOf( serial );
+    public Player(String serial) {
+        this.color = BoardValue.valueOf(serial);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return color.name();
     }
 
     /**
      * Gives the player the opportunity to perform a move on
      * the specified game board.
+     *
      * @param board the game board to make the move on
      */
-    public void makeMove( Board board ) {}
+    public abstract Flux<MoveNotification> makeMove(Board board);
 
-    public void interruptMove() {}
+    public void interruptMove() {
+    }
 
     //
     // ------------------- Bean Pattern ----------------
@@ -62,8 +89,7 @@ public class Player
      *
      * @return the value of color
      */
-    public BoardValue getColor()
-    {
+    public BoardValue getColor() {
         return color;
     }
 
@@ -73,15 +99,13 @@ public class Player
      *
      * @param color new value of color
      */
-    public void setColor( BoardValue color )
-    {
-        Assert.isTrue( color == BoardValue.BLACK || color == BoardValue.WHITE );
-        
+    public void setColor(BoardValue color) {
+        Assert.isTrue(color == BoardValue.BLACK || color == BoardValue.WHITE);
+
         this.color = color;
     }
 
-    public boolean isComputer()
-    {
+    public boolean isComputer() {
         return false;
     }
 }
