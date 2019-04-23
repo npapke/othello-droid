@@ -31,7 +31,7 @@ import java.util.Observable;
  *
  * @author npapke
  */
-public class GameExecutor extends Observable {
+public class GameExecutor {
     public final static String TAG = GameExecutor.class.getName();
 
     public void newGame() {
@@ -40,9 +40,6 @@ public class GameExecutor extends Observable {
         board = new Board();
         moveNumber = 1;
         state = GameState.TURN_PLAYER_0;
-
-        setChanged();
-        notifyObservers(this);
     }
 
     public void endGame() {
@@ -52,9 +49,6 @@ public class GameExecutor extends Observable {
             player[0].interruptMove();
         if (player[1] != null)
             player[1].interruptMove();
-
-        setChanged();
-        notifyObservers(this);
     }
 
     boolean isConsistent() {
@@ -73,29 +67,21 @@ public class GameExecutor extends Observable {
 
         switch (state) {
             case TURN_PLAYER_0:
-                player[0].makeMove(board)
+            case TURN_PLAYER_1: {
+                Player me = (state == GameState.TURN_PLAYER_0) ? player[0] : player[1];
+
+                me.makeMove(board)
                         .doOnNext(n -> board.makeMove(n.getMove()))
                         .blockLast();
 
                 moveNumber++;
-                if (board.hasValidMove(player[1].getColor())) {
-                    setState(GameState.TURN_PLAYER_1);
-                } else if (!board.hasValidMove(player[0].getColor())) {
+                if (board.hasValidMove(me.getColor().otherPlayer())) {
+                    setState(state == GameState.TURN_PLAYER_0 ? GameState.TURN_PLAYER_1 : GameState.TURN_PLAYER_0);
+                } else if (!board.hasValidMove(me.getColor())) {
                     setState(GameState.GAME_OVER);
                 }
                 break;
-
-            case TURN_PLAYER_1:
-                player[1].makeMove(board)
-                        .doOnNext(n -> board.makeMove(n.getMove()))
-                    .blockLast();
-                moveNumber++;
-                if (board.hasValidMove(player[0].getColor())) {
-                    setState(GameState.TURN_PLAYER_0);
-                } else if (!board.hasValidMove(player[1].getColor())) {
-                    setState(GameState.GAME_OVER);
-                }
-                break;
+            }
 
             case INACTIVE:
                 throw new IllegalStateException("Game not started");
@@ -104,9 +90,6 @@ public class GameExecutor extends Observable {
                 Log.w(TAG, "executeOneTurn: unexpectedly called while in state=" + state);
                 break;
         }
-
-        setChanged();
-        notifyObservers(this);
     }
 
     /**
