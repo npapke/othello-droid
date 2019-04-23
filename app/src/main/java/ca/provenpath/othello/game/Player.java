@@ -28,13 +28,20 @@ import reactor.core.publisher.Flux;
  * @author npapke
  */
 public abstract class Player {
-    public class MoveNotification {
+    public static class MoveNotification {
         private boolean isFinal;
         private Move move;
+        private Board board;
 
         public MoveNotification(boolean isFinal, Move move) {
             this.isFinal = isFinal;
             this.move = move;
+        }
+
+        public MoveNotification(boolean isFinal, Move move, Board board) {
+            this.isFinal = isFinal;
+            this.move = move;
+            this.board = board;
         }
 
         public boolean isFinal() {
@@ -51,6 +58,14 @@ public abstract class Player {
 
         public void setMove(Move move) {
             this.move = move;
+        }
+
+        public Board getBoard() {
+            return board;
+        }
+
+        public void setBoard(Board board) {
+            this.board = board;
         }
     }
 

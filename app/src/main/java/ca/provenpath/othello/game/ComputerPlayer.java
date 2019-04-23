@@ -22,10 +22,14 @@ package ca.provenpath.othello.game;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
+import ca.provenpath.othello.game.Player.MoveNotification;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
+
+import static reactor.core.publisher.Flux.create;
 
 /**
  * A computer player.  Automatically determines the optimal move for
@@ -34,22 +38,18 @@ import java.util.concurrent.Callable;
  *
  * @author npapke
  */
-public class ComputerPlayer extends Player
-{
+public class ComputerPlayer extends Player {
     public final static String TAG = ComputerPlayer.class.getSimpleName();
 
-    public ComputerPlayer( BoardValue color )
-    {
-        super( color );
+    public ComputerPlayer(BoardValue color) {
+        super(color);
     }
 
-    public ComputerPlayer( String serial )
-    {
-        super( serial );
+    public ComputerPlayer(String serial) {
+        super(serial);
     }
 
-    public boolean isComputer()
-    {
+    public boolean isComputer() {
         return true;
     }
 
@@ -60,34 +60,40 @@ public class ComputerPlayer extends Player
      * @return
      */
     @Override
-    public Flux<MoveNotification> makeMove(Board board )
-    {
-        Assert.notNull( color );
-        Assert.notNull( strategy );
-        Assert.isTrue( maxDepth > 0 );
-        Assert.isTrue( board.hasValidMove( color ) );
+    public Flux<MoveNotification> makeMove(Board board) {
 
-        isInterrupted = false;
+        Flux<MoveNotification> move = Flux
+                .create(sink -> {
 
-        Stats stats = new Stats();
-        MiniMaxResult result = minimaxAB( board, color, maxDepth, stats );
+                    Assert.notNull(color);
+                    Assert.notNull(strategy);
+                    Assert.isTrue(maxDepth > 0);
+                    Assert.isTrue(board.hasValidMove(color));
 
-        Assert.notNull( result.getBestPosition() );
+                    isInterrupted = false;
 
-        Log.i( TAG, "makeMove: " + result.getBestPosition() + ", value: " + result.getValue() );
-        long duration = stats.duration();
-        Log.i( TAG, String.format( "%d boards evaluated in %d ms. %d boards/sec",
-                stats.getBoardsEvaluated(),
-                duration,
-                duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999 ) );
+                    Stats stats = new Stats();
+                    MiniMaxResult result = minimaxAB(board, color, maxDepth, stats);
 
-        return Flux.just(
-                new MoveNotification(true, new Move( color, result.getBestPosition() ) ) );
+                    Assert.notNull(result.getBestPosition());
+
+                    Log.i(TAG, "makeMove: " + result.getBestPosition() + ", value: " + result.getValue());
+                    long duration = stats.duration();
+                    Log.i(TAG, String.format("%d boards evaluated in %d ms. %d boards/sec",
+                            stats.getBoardsEvaluated(),
+                            duration,
+                            duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999));
+
+                    sink.next(new MoveNotification(true, new Move(color, result.getBestPosition()), board));
+                    sink.complete();
+
+                });
+
+        return move.subscribeOn(Schedulers.newSingle("engine"));
     }
 
     @Override
-    public void interruptMove()
-    {
+    public void interruptMove() {
         isInterrupted = true;
     }
 
@@ -109,23 +115,15 @@ public class ComputerPlayer extends Player
             Board board,
             BoardValue player,
             int depth,
-            Stats stats )
-    {
-        int alpha = Integer.MIN_VALUE;
-        int beta = Integer.MAX_VALUE;
-
-        int value = Integer.MIN_VALUE;
-
+            Stats stats) {
         final PriorityQueue<MiniMaxResult> candidates = new PriorityQueue<>();
         final PriorityQueue<MiniMaxResult> results = new PriorityQueue<>();
 
-        for (Position pos : board)
-        {
-            Move m = new Move( player, pos );
+        for (Position pos : board) {
+            Move m = new Move(player, pos);
 
-            if (board.isValidMove( m ))
-            {
-                candidates.add( new MiniMaxResult( 0, pos ) );
+            if (board.isValidMove(m)) {
+                candidates.add(new MiniMaxResult(0, pos));
             }
         }
 
@@ -134,22 +132,22 @@ public class ComputerPlayer extends Player
          * hint better candidates to the subsequent iteration.  alpha-beta pruning
          * benefits greatly from discovering the best solution early.
          */
-        for (int curDepth : new int [] {1, 3, depth})
-        {
+        for (int curDepth : new int[]{1, 3, depth}) {
+            int alpha = Integer.MIN_VALUE;
+            int beta = Integer.MAX_VALUE;
+
             results.clear();
 
-            for (MiniMaxResult candidate : candidates)
-            {
+            for (MiniMaxResult candidate : candidates) {
                 // Always the maximizing player
                 Board copyOfBoard = (Board) board.clone();
-                copyOfBoard.makeMove( player, candidate.getBestPosition().getLinear() );
+                copyOfBoard.makeMove(player, candidate.getBestPosition().getLinear());
 
-                int result = minimaxAB( copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats );
+                int result = minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
 
-                results.add( new MiniMaxResult( result, candidate.getBestPosition() ) );
+                results.add(new MiniMaxResult(result, candidate.getBestPosition()));
 
-                value = Math.max( value, result );
-                alpha = Math.max( value, alpha );
+                alpha = Math.max(result, alpha);
                 if (beta <= alpha)
                     break;
 
@@ -157,22 +155,17 @@ public class ComputerPlayer extends Player
                     break;
             }
 
-            if (curDepth > 1)
-            {
-                Log.i( TAG, String.format( "Predicted best move: %s, found %s at depth %d",
-                        candidates.peek(), results.peek(), curDepth ) );
-                Log.i( TAG, String.format( "Predicted best move at position %d of %d",
-                        new Callable<Integer>()
-                        {
+            if (curDepth > 1) {
+                Log.i(TAG, String.format("Predicted best move: %s, found %s at depth %d",
+                        candidates.peek(), results.peek(), curDepth));
+                Log.i(TAG, String.format("Predicted best move at position %d of %d",
+                        new Callable<Integer>() {
                             @Override
-                            public Integer call()
-                            {
+                            public Integer call() {
                                 int ordinal = 1;
                                 Position target = candidates.peek().getBestPosition();
-                                for (MiniMaxResult res : results)
-                                {
-                                    if (res.getBestPosition().equals( target ))
-                                    {
+                                for (MiniMaxResult res : results) {
+                                    if (res.getBestPosition().equals(target)) {
                                         return ordinal;
                                     }
                                     ++ordinal;
@@ -181,46 +174,39 @@ public class ComputerPlayer extends Player
                                 return -1;
                             }
                         }.call(),
-                        results.size() ) );
+                        results.size()));
             }
 
             candidates.clear();
-            candidates.addAll( results );
+            candidates.addAll(results);
         }
 
         // We should be assured at least one valid move
-        Assert.isTrue( !results.isEmpty() );
+        Assert.isTrue(!results.isEmpty());
 
-        return bestResultOf( results );
+        return bestResultOf(results);
     }
 
     /**
      * Applies a little entropy to homogeneous results.
+     *
      * @param results candidate results sorted in value order
      * @return "best" result
      */
-    private MiniMaxResult bestResultOf( Iterable<MiniMaxResult> results )
-    {
+    private MiniMaxResult bestResultOf(Iterable<MiniMaxResult> results) {
         MiniMaxResult best = null;
 
-        for (MiniMaxResult result : results)
-        {
-            if (best == null)
-            {
+        for (MiniMaxResult result : results) {
+            if (best == null) {
                 best = result;
-            }
-            else if (best.value == result.value)
-            {
+            } else if (best.value == result.value) {
                 // Decide randomly which one to take
                 // FIXME better distribution for N > 2 results
-                if (Math.random() < 0.5)
-                {
-                    Log.i( TAG, "Updated result to " + result );
+                if (Math.random() < 0.5) {
+                    Log.i(TAG, "Updated result to " + result);
                     best = result;
                 }
-            }
-            else
-            {
+            } else {
                 break;
             }
         }
@@ -247,37 +233,31 @@ public class ComputerPlayer extends Player
             int depth,
             int alpha,
             int beta,
-            Stats stats )
-    {
-        if (depth <= 0 || isInterrupted)
-        {
+            Stats stats) {
+        if (depth <= 0 || isInterrupted) {
             stats.incBoard();
-            return strategy.determineBoardValue( color, board );
+            return strategy.determineBoardValue(color, board);
         }
 
         boolean validMoveSeen = false;
         int value;
 
-        if (player == color)
-        {
+        if (player == color) {
             value = Integer.MIN_VALUE;
 
-            for (int pos = 0; Position.isValid( pos ); pos++)
-            {
-                if (board.isValidMove( player, pos ))
-                {
+            for (int pos = 0; Position.isValid(pos); pos++) {
+                if (board.isValidMove(player, pos)) {
                     validMoveSeen = true;
 
                     Board copyOfBoard = (Board) board.clone();
-                    copyOfBoard.makeMove( player, pos );
+                    copyOfBoard.makeMove(player, pos);
 
-                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats );
-                    if (result > value)
-                    {
+                    int result = minimaxAB(copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats);
+                    if (result > value) {
                         value = result;
                     }
 
-                    alpha = Math.max( value, alpha );
+                    alpha = Math.max(value, alpha);
                     if (beta <= alpha)
                         break;
                 }
@@ -285,27 +265,22 @@ public class ComputerPlayer extends Player
                 if (isInterrupted)
                     break;
             }
-        }
-        else
-        {
+        } else {
             value = Integer.MAX_VALUE;
 
-            for (int pos = 0; Position.isValid( pos ); pos++)
-            {
-                if (board.isValidMove( player, pos ))
-                {
+            for (int pos = 0; Position.isValid(pos); pos++) {
+                if (board.isValidMove(player, pos)) {
                     validMoveSeen = true;
 
                     Board copyOfBoard = (Board) board.clone();
-                    copyOfBoard.makeMove( player, pos );
+                    copyOfBoard.makeMove(player, pos);
 
-                    int result = minimaxAB( copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats );
-                    if (result < value)
-                    {
+                    int result = minimaxAB(copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats);
+                    if (result < value) {
                         value = result;
                     }
 
-                    beta = Math.min( value, beta );
+                    beta = Math.min(value, beta);
                     if (beta <= alpha)
                         break;
                 }
@@ -315,18 +290,14 @@ public class ComputerPlayer extends Player
             }
         }
 
-        if (!validMoveSeen)
-        {
+        if (!validMoveSeen) {
             // player has to pass ...
 
-            if (board.hasValidMove( player.otherPlayer() ))
-            {
-                value = minimaxAB( board, player.otherPlayer(), depth, alpha, beta, stats );
-            }
-            else
-            {
+            if (board.hasValidMove(player.otherPlayer())) {
+                value = minimaxAB(board, player.otherPlayer(), depth, alpha, beta, stats);
+            } else {
                 // neither player has a valid move.  return the score
-                value = strategy.determineFinalScore( color, board );
+                value = strategy.determineFinalScore(color, board);
             }
         }
 
@@ -334,47 +305,39 @@ public class ComputerPlayer extends Player
     }
 
 
-    private class MiniMaxResult implements Comparable<MiniMaxResult>
-    {
-        public MiniMaxResult( int value )
-        {
+    private class MiniMaxResult implements Comparable<MiniMaxResult> {
+        public MiniMaxResult(int value) {
             this.value = value;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return "MiniMaxResult{" +
                     "value=" + value +
                     ", bestMove=" + bestMove +
                     '}';
         }
 
-        public MiniMaxResult( int value, Position bestMove )
-        {
+        public MiniMaxResult(int value, Position bestMove) {
             this.value = value;
             this.bestMove = bestMove;
         }
 
-        public int getValue()
-        {
+        public int getValue() {
             return value;
         }
 
-        public void setValue( int value )
-        {
+        public void setValue(int value) {
             this.value = value;
         }
 
         private int value;
 
-        public Position getBestPosition()
-        {
+        public Position getBestPosition() {
             return bestMove;
         }
 
-        public void setBestMove( Position bestMove )
-        {
+        public void setBestMove(Position bestMove) {
             this.bestMove = bestMove;
         }
 
@@ -383,7 +346,7 @@ public class ComputerPlayer extends Player
         /**
          * Compares this object to the specified object to determine their relative
          * order.
-         *
+         * <p>
          * Natural sort order is highest value results first.
          *
          * @param another the object to compare to this instance.
@@ -395,57 +358,52 @@ public class ComputerPlayer extends Player
          *                            comparable to {@code this} instance.
          */
         @Override
-        public int compareTo( @NonNull MiniMaxResult another )
-        {
-            return Integer.compare( another.value, this.value );
+        public int compareTo(@NonNull MiniMaxResult another) {
+            return Integer.compare(another.value, this.value);
         }
     }
 
     /**
      * Helper for performance statistics.  Thread-safe.
-    private class Stats
-    {
-        private long start = System.currentTimeMillis();
-        private AtomicInteger boardsEvaluated = new AtomicInteger( 0 );
+     private class Stats
+     {
+     private long start = System.currentTimeMillis();
+     private AtomicInteger boardsEvaluated = new AtomicInteger( 0 );
 
-        public void incBoard()
-        {
-            boardsEvaluated.getAndIncrement();
-        }
+     public void incBoard()
+     {
+     boardsEvaluated.getAndIncrement();
+     }
 
-        public int getBoardsEvaluated()
-        {
-            return boardsEvaluated.get();
-        }
+     public int getBoardsEvaluated()
+     {
+     return boardsEvaluated.get();
+     }
 
-        public long duration()
-        {
-            return System.currentTimeMillis() - start;
-        }
-    }
+     public long duration()
+     {
+     return System.currentTimeMillis() - start;
+     }
+     }
      */
 
 
     /**
      * Helper for performance statistics.  Not thread-safe.
      */
-    private class Stats
-    {
+    private class Stats {
         private long start = System.currentTimeMillis();
         private int boardsEvaluated = 0;
 
-        public void incBoard()
-        {
+        public void incBoard() {
             boardsEvaluated++;
         }
 
-        public int getBoardsEvaluated()
-        {
+        public int getBoardsEvaluated() {
             return boardsEvaluated;
         }
 
-        public long duration()
-        {
+        public long duration() {
             return System.currentTimeMillis() - start;
         }
     }
@@ -462,8 +420,7 @@ public class ComputerPlayer extends Player
      *
      * @return the value of maxDepth
      */
-    public int getMaxDepth()
-    {
+    public int getMaxDepth() {
         return maxDepth;
     }
 
@@ -473,8 +430,7 @@ public class ComputerPlayer extends Player
      *
      * @param maxDepth new value of maxDepth
      */
-    public void setMaxDepth( int maxDepth )
-    {
+    public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
 
@@ -487,8 +443,7 @@ public class ComputerPlayer extends Player
      *
      * @return the value of strategy
      */
-    public Strategy getStrategy()
-    {
+    public Strategy getStrategy() {
         return strategy;
     }
 
@@ -498,8 +453,7 @@ public class ComputerPlayer extends Player
      *
      * @param strategy new value of strategy
      */
-    public void setStrategy( Strategy strategy )
-    {
+    public void setStrategy(Strategy strategy) {
         this.strategy = strategy;
     }
 

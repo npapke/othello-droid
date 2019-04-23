@@ -21,6 +21,7 @@ package ca.provenpath.othello.game;
 
 import android.util.Log;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -41,42 +42,39 @@ public class HumanPlayer extends Player {
 
     @Override
     public Flux<MoveNotification> makeMove(Board board) {
-        nextMove.clear();   // no stale moves
 
-        for (; ; ) {
-            HumanMove humanMove = waitForMove();
-            Move boardMove = humanMove.getMove();
-            if (boardMove == null)
-                return Flux.empty();
+        Flux<HumanMove> getMove = Flux
+                .create(sink -> {
+                    moveSink = sink;
+                });
 
-            if (board.isValidMove(boardMove)) {
-                Log.i(TAG, "Applying move " + boardMove);
+        return getMove
+                .filter(move -> {
+                    Move boardMove = move.getMove();
 
-                return Flux.just(new MoveNotification(true, boardMove));
-            } else {
-                Log.d(TAG, "Invalid move " + boardMove);
-            }
-        }
+                    return (boardMove != null) && board.isValidMove(boardMove);
+                })
+                .doOnNext(n -> {
+                    moveSink.complete();
+                    moveSink = null;
+                })
+                .map(move -> new MoveNotification(true, move.getMove(), board));
+
     }
 
     @Override
     public void interruptMove() {
         // Signal the end
-        nextMove.offer(new HumanMove());
+        if (moveSink != null) {
+            moveSink.next(new HumanMove());
+        }
     }
 
     public void attemptMove(int lvalue) {
         Log.d(TAG, "Move to " + lvalue);
 
-        nextMove.offer(new HumanMove(lvalue));
-    }
-
-    private HumanMove waitForMove() {
-        for (; ; ) {
-            try {
-                return nextMove.take();
-            } catch (InterruptedException e) {
-            }
+        if (moveSink != null) {
+            moveSink.next(new HumanMove(lvalue));
         }
     }
 
@@ -99,5 +97,5 @@ public class HumanPlayer extends Player {
         private Move mMove;
     }
 
-    private transient BlockingQueue<HumanMove> nextMove = new ArrayBlockingQueue<HumanMove>(1);
+    private transient FluxSink moveSink;
 }

@@ -137,6 +137,7 @@ public class Board implements Cloneable, Iterable<Position>
         this.lastMovePos = other.lastMovePos;
         this.lastMoveValue = other.lastMoveValue;
         this.serial = other.serial;
+        this.numPieces = other.numPieces;
     }
 
     public boolean isConsistent()
@@ -238,12 +239,14 @@ public class Board implements Cloneable, Iterable<Position>
      */
     private void updateValidMoves()
     {
+        numPieces = 0;
         for (int lpos = 0; lpos < board.length; lpos++)
         {
             BoardValue cell = board[lpos];
 
             if (cell.isPlayer())
             {
+                ++numPieces;
                 continue;
             }
 
@@ -393,9 +396,11 @@ public class Board implements Cloneable, Iterable<Position>
     /**
      * Applies the specified move to the board
      */
-    public void makeMove( Move m )
+    public Board makeMove( Move m )
     {
         makeMove( m.getValue(), m.getPosition().getLinear() );
+
+        return this;
     }
 
     /**
@@ -739,8 +744,14 @@ public class Board implements Cloneable, Iterable<Position>
         return new Move( lastMoveValue, new Position( lastMovePos ) );
     }
 
-    int lastMovePos;
-    BoardValue lastMoveValue;
+    private int lastMovePos;
+    private BoardValue lastMoveValue;
+
+    public int getNumPieces() {
+        return numPieces;
+    }
+
+    private int numPieces = 0;
 
     /**
      * Iterator across the entire board
