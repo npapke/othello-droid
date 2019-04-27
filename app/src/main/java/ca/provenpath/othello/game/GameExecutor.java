@@ -81,6 +81,14 @@ public class GameExecutor {
             this.moveNotification = other.moveNotification;
         }
 
+        @Override
+        public String toString() {
+            return "Tracker{" +
+                    "move=" + board.getNumPieces() +
+                    "state=" + state +
+                    ", board=" + board +
+                    '}';
+        }
 
         public boolean isConsistent() {
             return (board != null) &&
@@ -187,7 +195,12 @@ public class GameExecutor {
             Function<BoardValue, SharedPreferences> prefs,
             Optional<Tracker> tracker) {
 
+        Log.i(TAG, "executeOneGame: " + tracker.toString());
+
         endGame();
+
+        // TODO this limits us to one undo level
+        history.clear();
 
         gameThread = new Thread(() -> runOneGame(uiThreadHandler, prefs, tracker));
         gameThread.setName("game");
@@ -212,7 +225,11 @@ public class GameExecutor {
     }
 
     public Optional<Tracker> getGameState() {
-        return Optional.ofNullable(history.isEmpty() ? null : history.peek());
+        return history.stream().findFirst();
+    }
+
+    public Optional<Tracker> getUndoGameState() {
+        return history.stream().skip(1).limit(1).findFirst();
     }
 
     private void runOneGame(
@@ -223,17 +240,17 @@ public class GameExecutor {
         Tracker tracker = inTracker.orElse(newGame());
 
         while (tracker.getState() != GameState.GAME_OVER && !stopGameThread) {
-            if (applyPreferences(prefs, tracker)) {
-                sendRedrawRequest(uiThreadHandler, tracker);
-            }
+            applyPreferences(prefs, tracker);
 
             if (!tracker.getNextPlayer().isComputer()) {
                 history.push(tracker);
+                Log.i(TAG, "push: " + tracker.toString());
             }
 
             tracker = Optional.ofNullable(
                     Flux
                             .just(new Tracker(tracker))
+                            .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
                             .flatMap(trkr -> nextTurn(trkr))
                             .doOnNext(trkr -> Log.d(TAG, "game: " + trkr.toString()))
                             // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.

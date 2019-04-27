@@ -60,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
             tracker =
                     Optional.of(
                             GameExecutorSerializer.deserialize(savedInstanceState.getString(KEY_EXECUTOR)));
-            mLastMoveExecutorSerial = savedInstanceState.getString(KEY_LAST_MOVE);
         }
 
         setContentView(R.layout.activity_main);
@@ -125,8 +124,6 @@ public class MainActivity extends AppCompatActivity {
                     bundle.putString(KEY_EXECUTOR, serial);
                     return serial;
                 });
-
-        if (mLastMoveExecutorSerial != null) bundle.putString(KEY_LAST_MOVE, mLastMoveExecutorSerial);
     }
 
     @Override
@@ -201,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * (Re)initializes the game state.
      */
-    private void runGame(Optional<GameExecutor.Tracker> tracker) {
+    private Optional<GameExecutor.Tracker> runGame(Optional<GameExecutor.Tracker> tracker) {
         GameExecutor.instance()
                 .executeOneGame(
                         mHandler,
@@ -209,18 +206,14 @@ public class MainActivity extends AppCompatActivity {
                                 PlayerSettingsFragment.getSharedPreferencesName(color.name()),
                                 Context.MODE_PRIVATE),
                         tracker);
+        return tracker;
     }
 
     /**
      * Restores an earlier game state, if possible.
      */
     private void undoGame() {
-        if (mLastMoveExecutorSerial != null) {
-            Optional<GameExecutor.Tracker> lastState =
-                    Optional.ofNullable(GameExecutorSerializer.deserialize(mLastMoveExecutorSerial));
-
-            runGame(lastState);
-        }
+        GameExecutor.instance().getUndoGameState().flatMap(tracker -> runGame(Optional.of(tracker)));
     }
 
     private void updateDisplay(GameExecutor.Tracker tracker) {
@@ -230,14 +223,16 @@ public class MainActivity extends AppCompatActivity {
         if (statusFragment != null) {
             statusFragment.update(tracker);
 
-            findViewById(R.id.undo).setEnabled(mLastMoveExecutorSerial != null);
-
             if (tracker == null) {
                 mBoardAdaptor.redraw(null, BoardValue.EMPTY);
             } else {
                 showValidMoves(tracker);
             }
         }
+
+        findViewById(R.id.undo).setEnabled(
+                GameExecutor.instance().getUndoGameState().isPresent() &&
+                !tracker.getNextPlayer().isComputer());
     }
 
     private void showValidMoves(GameExecutor.Tracker tracker) {
@@ -271,6 +266,5 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_LAST_MOVE = MainActivity.class.getName() + ".lastMove-1";
 
     private Handler mHandler;
-    private String mLastMoveExecutorSerial;
     private BoardAdapter mBoardAdaptor;
 }
