@@ -23,8 +23,7 @@ import android.util.Log;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.Optional;
 
 /**
  * Created by npapke on 2/25/15.
@@ -43,39 +42,44 @@ public class HumanPlayer extends Player {
     @Override
     public Flux<MoveNotification> makeMove(Board board) {
 
-        Flux<HumanMove> getMove = Flux
-                .create(sink -> {
+        return Flux
+                .<Optional<Integer>>create(sink -> {
                     moveSink = sink;
-                });
-
-        return getMove
-                .filter(move -> {
-                    Move boardMove = move.getMove();
-
-                    return (boardMove != null) && board.isValidMove(boardMove);
                 })
-                .doOnNext(n -> {
-                    moveSink.complete();
-                    moveSink = null;
+                .flatMap(move -> {
+                    if (move.isPresent()) {
+                        if (board.isValidMove(getColor(), move.get())) {
+                            moveSink.complete();
+                            return Flux.just(new Move(getColor(), new Position(move.get())));
+                        }
+                    } else {
+                        // interrupted move
+                        moveSink.complete();
+                    }
+                    return Flux.empty();
                 })
-                .map(move -> new MoveNotification(true, move.getMove(), board));
+                .map(move -> new MoveNotification(true, move, board))
+                .doOnComplete(() -> moveSink = null);
 
     }
 
     @Override
     public void interruptMove() {
+        Log.i(TAG, "interruptMove");
         // Signal the end
         if (moveSink != null) {
-            moveSink.next(new HumanMove());
+            moveSink.next(Optional.empty());
         }
     }
 
-    public void attemptMove(int lvalue) {
+    public boolean offerMove(int lvalue) {
         Log.d(TAG, "Move to " + lvalue);
 
         if (moveSink != null) {
-            moveSink.next(new HumanMove(lvalue));
+            moveSink.next(Optional.of(lvalue));
+            return true;
         }
+        return false;
     }
 
     /**
@@ -97,5 +101,5 @@ public class HumanPlayer extends Player {
         private Move mMove;
     }
 
-    private transient volatile FluxSink moveSink;
+    private transient volatile FluxSink<Optional<Integer>> moveSink;
 }

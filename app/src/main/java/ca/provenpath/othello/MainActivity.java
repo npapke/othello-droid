@@ -76,18 +76,6 @@ public class MainActivity extends AppCompatActivity {
                     attemptMove(position);
                 });
 
-    /*
-    gridview.setOnItemLongClickListener( new AdapterView.OnItemLongClickListener()
-    {
-        @Override
-        public boolean onItemLongClick( AdapterView<?> parent, View v, int position, long id )
-        {
-            simulateMove( position );
-            return true;
-        }
-    } );
-    */
-
         findViewById(R.id.undo).setOnClickListener(v -> undoGame());
         findViewById(R.id.newgame).setOnClickListener(v -> runGame(Optional.empty()));
 
@@ -272,7 +260,7 @@ public class MainActivity extends AppCompatActivity {
             GameExecutor.Tracker tracker = oTracker.get();
             Player human = tracker.getNextPlayer();
             if ((human != null) && !human.isComputer()) {
-                ((HumanPlayer) human).attemptMove(position);
+                human.offerMove(position);
             }
         }
     }

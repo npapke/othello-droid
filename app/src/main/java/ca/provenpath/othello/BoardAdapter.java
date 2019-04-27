@@ -89,21 +89,20 @@ public class BoardAdapter extends BaseAdapter
             // if it's not recycled, initialize some attributes
             imageView = new ImageView( mContext );
 
+            int size = Math.min( parent.getHeight(), parent.getWidth() ) / 8;
+
+            //Log.v( TAG, String.format( "Position: %d, Parent size: %d x %d, Tile size: %d",
+            //    position, parent.getWidth(), parent.getHeight(), size ) );
+
+            imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
+            imageView.setScaleType( ImageView.ScaleType.FIT_XY );
+            imageView.setPadding( 0, 0, 0, 0 );
+            imageView.setAdjustViewBounds( true );
         }
         else
         {
             imageView = (ImageView) convertView;
         }
-
-        int size = Math.min( parent.getHeight(), parent.getWidth() ) / 8;
-
-        //Log.v( TAG, String.format( "Position: %d, Parent size: %d x %d, Tile size: %d",
-        //    position, parent.getWidth(), parent.getHeight(), size ) );
-
-        imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
-        imageView.setScaleType( ImageView.ScaleType.FIT_XY );
-        imageView.setPadding( 0, 0, 0, 0 );
-        imageView.setAdjustViewBounds( true );
 
         BoardValue bv = mBoard.getLvalue( position );
         int resource = resourceForCell( bv );

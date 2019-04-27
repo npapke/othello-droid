@@ -85,10 +85,17 @@ public abstract class Player {
     /**
      * Gives the player the opportunity to perform a move on
      * the specified game board.
+     *  @param board the game board to make the move on
      *
-     * @param board the game board to make the move on
      */
     public abstract Flux<MoveNotification> makeMove(Board board);
+
+    /**
+     * Suggests a move to the player.
+     * @param lvalue linear position of move
+     * @return true iff player accepted the suggestion
+     */
+    public abstract boolean offerMove(int lvalue);
 
     public void interruptMove() {
     }

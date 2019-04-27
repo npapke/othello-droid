@@ -23,20 +23,18 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-
 import ca.provenpath.othello.MainActivity;
 import ca.provenpath.othello.PlayerSettingsFragment;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.GameState;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
-import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Execute a game.  Coordinate the game board and players.
@@ -177,18 +175,28 @@ public class GameExecutor {
             Function<BoardValue, SharedPreferences> prefs,
             Optional<Tracker> tracker) {
 
+        endGame();
+
+        gameThread = new Thread(() -> runOneGame(uiThreadHandler, prefs, tracker));
+        gameThread.setName("game");
+        gameThread.start();
+    }
+
+    private void endGame() {
         if (gameThread != null) {
             stopGameThread = true;
+
+            history
+                    .stream()
+                    .limit(1)
+                    .forEach(tracker -> Arrays.stream(tracker.getPlayer())
+                            .forEach(player -> player.interruptMove()));
             try {
                 gameThread.join(5000);
             } catch (InterruptedException e) {
             }
             stopGameThread = false;
         }
-
-        gameThread = new Thread(() -> runOneGame(uiThreadHandler, prefs, tracker));
-        gameThread.setName("game");
-        gameThread.start();
     }
 
     public Optional<Tracker> getGameState() {
@@ -211,15 +219,17 @@ public class GameExecutor {
                 history.push(tracker);
             }
 
-            tracker = Flux
-                    .just(tracker)
-                    .flatMap(trkr -> nextTurn(trkr))
-                    .doOnNext(trkr -> Log.d(TAG, "game: " + trkr.toString()))
-                    // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.
-                    //       Would really like to avoid the Handler.
-                    .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
-                    .doOnError(error -> sendRedrawRequest(uiThreadHandler, null)) // FIXME
-                    .blockLast();
+            tracker = Optional.ofNullable(
+                    Flux
+                            .just(tracker)
+                            .flatMap(trkr -> nextTurn(trkr))
+                            .doOnNext(trkr -> Log.d(TAG, "game: " + trkr.toString()))
+                            // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.
+                            //       Would really like to avoid the Handler.
+                            .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
+                            .doOnError(error -> sendRedrawRequest(uiThreadHandler, null)) // FIXME
+                            .blockLast())
+                    .orElse(tracker); // keep old state on error
         }
     }
 
@@ -305,9 +315,7 @@ public class GameExecutor {
                     tracker.moveNotification = t.getT1();
                     return tracker;
                 })
-                .doOnNext(tracker -> {
-                    tracker.board.makeMove(tracker.moveNotification.getMove());
-                })
+                .doOnNext(tracker -> tracker.board.makeMove(tracker.moveNotification.getMove()))
                 .map(tracker -> {
                     Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];
                     if (tracker.board.hasValidMove(me.getColor().otherPlayer())) {

@@ -90,7 +90,13 @@ public class ComputerPlayer extends Player {
     }
 
     @Override
+    public boolean offerMove(int lvalue) {
+        return false;
+    }
+
+    @Override
     public void interruptMove() {
+        Log.i(TAG, "interruptMove");
         isInterrupted = true;
     }
 
