@@ -70,6 +70,18 @@ public class GameExecutor {
         GameNotification notification;
         Player.MoveNotification moveNotification;
 
+        public Tracker() {
+        }
+
+        public Tracker(Tracker other) {
+            this.state = other.state;
+            this.board = new Board(other.board);
+            this.player = Arrays.copyOf(other.player, other.player.length);
+            this.notification = other.notification;
+            this.moveNotification = other.moveNotification;
+        }
+
+
         public boolean isConsistent() {
             return (board != null) &&
                     board.isConsistent() &&
@@ -163,7 +175,7 @@ public class GameExecutor {
     private Deque<Tracker> history = new ConcurrentLinkedDeque<>();
 
     public void finalize() {
-        stopGameThread = true;
+        endGame();
     }
 
     /**
@@ -221,7 +233,7 @@ public class GameExecutor {
 
             tracker = Optional.ofNullable(
                     Flux
-                            .just(tracker)
+                            .just(new Tracker(tracker))
                             .flatMap(trkr -> nextTurn(trkr))
                             .doOnNext(trkr -> Log.d(TAG, "game: " + trkr.toString()))
                             // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.
@@ -286,7 +298,7 @@ public class GameExecutor {
         return false;
     }
 
-    public Flux<Tracker> nextTurn(Tracker inTracker) {
+    private Flux<Tracker> nextTurn(Tracker inTracker) {
 
         return Flux
                 .just(inTracker)
@@ -311,7 +323,7 @@ public class GameExecutor {
                     }
                 })
                 .map(t -> {
-                    Tracker tracker = (Tracker) t.getT2();
+                    Tracker tracker = new Tracker((Tracker) t.getT2());
                     tracker.moveNotification = t.getT1();
                     return tracker;
                 })
