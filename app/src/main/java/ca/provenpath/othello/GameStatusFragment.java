@@ -1,7 +1,6 @@
 package ca.provenpath.othello;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -9,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import ca.provenpath.othello.game.BoardValue;
 import ca.provenpath.othello.game.GameExecutor;
 import ca.provenpath.othello.game.Player;
@@ -20,12 +18,10 @@ import ca.provenpath.othello.game.Player;
  * Use the {@link GameStatusFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class GameStatusFragment extends Fragment
-{
+public class GameStatusFragment extends Fragment {
     private static final String TAG = GameStatusFragment.class.getSimpleName();
 
-    public GameStatusFragment()
-    {
+    public GameStatusFragment() {
         // Required empty public constructor
     }
 
@@ -38,105 +34,87 @@ public class GameStatusFragment extends Fragment
      * @return A new instance of fragment BoardStatusFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static GameStatusFragment newInstance( String param1, String param2 )
-    {
+    public static GameStatusFragment newInstance(String param1, String param2) {
         GameStatusFragment fragment = new GameStatusFragment();
         return fragment;
     }
 
     @Override
-    public void onCreate( Bundle savedInstanceState )
-    {
-        super.onCreate( savedInstanceState );
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
     }
 
     @Override
-    public View onCreateView( LayoutInflater inflater, ViewGroup container,
-                              Bundle savedInstanceState )
-    {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate( R.layout.fragment_game_status, container, false );
+        return inflater.inflate(R.layout.fragment_game_status, container, false);
     }
 
     @Override
-    public void onAttach( Context context )
-    {
-        super.onAttach( context );
+    public void onAttach(Context context) {
+        super.onAttach(context);
 
-        Log.i( TAG, "Attaching a " + context.getClass().getSimpleName() );
+        Log.i(TAG, "Attaching a " + context.getClass().getSimpleName());
     }
 
     @Override
-    public void onDetach()
-    {
+    public void onDetach() {
         super.onDetach();
     }
 
-    public void update( GameExecutor executor )
-    {
+    public void update(GameExecutor.Tracker tracker) {
         // TODO make this translatable
 
-        if (executor == null)
-        {
-            drawText( R.id.message, "Select 'New Game' to start" );
-        }
-        else
-        {
+        if (tracker == null) {
+            drawText(R.id.message, "Select 'New Game' to start");
+        } else {
             StringBuilder buf = new StringBuilder();
 
-            int blackScore = executor.getBoard().countBoardValues( BoardValue.BLACK );
-            int whiteScore = executor.getBoard().countBoardValues( BoardValue.WHITE );
+            int blackScore = tracker.getBoard().countBoardValues(BoardValue.BLACK);
+            int whiteScore = tracker.getBoard().countBoardValues(BoardValue.WHITE);
 
-            drawText( R.id.status_black_score, Integer.toString( blackScore ) );
-            drawText( R.id.status_white_score, Integer.toString( whiteScore ) );
-            drawText( R.id.status_remaining, Integer.toString( 61 - executor.getMoveNumber() ) );
+            drawText(R.id.status_black_score, Integer.toString(blackScore));
+            drawText(R.id.status_white_score, Integer.toString(whiteScore));
+            drawText(R.id.status_remaining, Integer.toString(64 - (blackScore + whiteScore)));
 
-            Player player = executor.getNextPlayer();
 
-            switch (executor.getState())
-            {
+            switch (tracker.getState()) {
                 case TURN_PLAYER_0:
-                case TURN_PLAYER_1:
-                    if (player != null)
-                    {
-                        if (player.isComputer())
-                        {
-                            buf.append( "Processing for " + player.getColor().name() );
+                case TURN_PLAYER_1: {
+                    Player player = tracker.getNextPlayer();
+                    if (player != null) {
+                        if (player.isComputer()) {
+                            buf.append("Processing for " + player.getColor().name());
+                        } else {
+                            buf.append(player.getColor().name() + ", your turn.");
                         }
-                        else
-                        {
-                            buf.append( player.getColor().name() + ", your turn." );
-                        }
-                    }
-                    else
-                    {
-                        buf.append( "missing player" );
+                    } else {
+                        buf.append("missing player");
                     }
                     break;
+                }
 
-                case GAME_OVER:
-                {
+                case GAME_OVER: {
                     // Toast.makeText( MainActivity.this, "Game over", Toast.LENGTH_SHORT ).show();
                     if (blackScore > whiteScore)
-                        buf.append( "BLACK wins" );
+                        buf.append("BLACK wins");
                     else if (blackScore < whiteScore)
-                        buf.append( "WHITE wins" );
+                        buf.append("WHITE wins");
                     else
-                        buf.append( "Tied game." );
+                        buf.append("Tied game.");
                     break;
                 }
             }
 
-            drawText( R.id.message, buf.toString() );
+            drawText(R.id.message, buf.toString());
         }
     }
 
-    private void drawText( int viewId, String msg )
-    {
-        View view = getView().findViewById( viewId );
-        if (view instanceof TextView)
-        {
-            ((TextView) view).setText( msg );
+    private void drawText(int viewId, String msg) {
+        View view = getView().findViewById(viewId);
+        if (view instanceof TextView) {
+            ((TextView) view).setText(msg);
         }
     }
 }

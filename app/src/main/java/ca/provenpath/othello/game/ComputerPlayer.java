@@ -22,14 +22,11 @@ package ca.provenpath.othello.game;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
-import ca.provenpath.othello.game.Player.MoveNotification;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
-
-import static reactor.core.publisher.Flux.create;
 
 /**
  * A computer player.  Automatically determines the optimal move for
@@ -133,13 +130,13 @@ public class ComputerPlayer extends Player {
          * benefits greatly from discovering the best solution early.
          */
         for (int curDepth : new int[]{1, 3, depth}) {
+            // Always the maximizing player
             int alpha = Integer.MIN_VALUE;
             int beta = Integer.MAX_VALUE;
 
             results.clear();
 
             for (MiniMaxResult candidate : candidates) {
-                // Always the maximizing player
                 Board copyOfBoard = (Board) board.clone();
                 copyOfBoard.makeMove(player, candidate.getBestPosition().getLinear());
 

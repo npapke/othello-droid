@@ -19,12 +19,24 @@
 
 package ca.provenpath.othello.game;
 
+import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
+import ca.provenpath.othello.MainActivity;
+import ca.provenpath.othello.PlayerSettingsFragment;
+import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.GameState;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
+import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
-import java.util.Observable;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Execute a game.  Coordinate the game board and players.
@@ -34,166 +46,279 @@ import java.util.Observable;
 public class GameExecutor {
     public final static String TAG = GameExecutor.class.getName();
 
-    public void newGame() {
-        Log.i(TAG, "newGame");
+    //region [Singleton]
+    // TODO Look into dependency injection
+    private static GameExecutor mInstance;
 
-        board = new Board();
-        moveNumber = 1;
-        state = GameState.TURN_PLAYER_0;
-    }
-
-    public void endGame() {
-        setState(GameState.GAME_OVER);
-
-        if (player[0] != null)
-            player[0].interruptMove();
-        if (player[1] != null)
-            player[1].interruptMove();
-    }
-
-    boolean isConsistent() {
-        return (board != null) && board.isConsistent() && (player[0] != null) && (player[1] != null);
-    }
-
-
-    /**
-     * Execute one turn on the board.
-     * The <code>Player</code>s will be asked to make the actual move.
-     */
-    public void executeOneTurn() {
-        Log.d(TAG, "executeOneTurn: state=" + state);
-
-        Assert.isTrue(isConsistent());
-
-        switch (state) {
-            case TURN_PLAYER_0:
-            case TURN_PLAYER_1: {
-                Player me = (state == GameState.TURN_PLAYER_0) ? player[0] : player[1];
-
-                me.makeMove(board)
-                        .doOnNext(n -> board.makeMove(n.getMove()))
-                        .blockLast();
-
-                moveNumber++;
-                if (board.hasValidMove(me.getColor().otherPlayer())) {
-                    setState(state == GameState.TURN_PLAYER_0 ? GameState.TURN_PLAYER_1 : GameState.TURN_PLAYER_0);
-                } else if (!board.hasValidMove(me.getColor())) {
-                    setState(GameState.GAME_OVER);
-                }
-                break;
-            }
-
-            case INACTIVE:
-                throw new IllegalStateException("Game not started");
-
-            default:
-                Log.w(TAG, "executeOneTurn: unexpectedly called while in state=" + state);
-                break;
+    public static synchronized GameExecutor instance() {
+        if (mInstance == null) {
+            Hooks.onOperatorDebug();
+            mInstance = new GameExecutor();
         }
+        return mInstance;
     }
+    //endregion
+
+    //region [Tracker]
 
     /**
-     * Update state and prevent from being overwritten when game has ended
-     *
-     * @param state
+     * Tracks all state for a game.
      */
-    private void setState(GameState state) {
-        if (this.state != GameState.GAME_OVER) {
+    public static class Tracker {
+
+        GameState state;
+        Board board;
+        Player player[] = new Player[2];
+        GameNotification notification;
+        Player.MoveNotification moveNotification;
+
+        public boolean isConsistent() {
+            return (board != null) &&
+                    board.isConsistent() &&
+                    (player[0] != null) &&
+                    (player[1] != null);
+        }
+
+        /**
+         * Gets the player that will make the next move.
+         */
+        public Player getNextPlayer() {
+            switch (state) {
+                case TURN_PLAYER_0:
+                    return player[0];
+                case TURN_PLAYER_1:
+                    return player[1];
+                default:
+                    return null;
+            }
+        }
+
+        public GameState getState() {
+            return state;
+        }
+
+        public void setState(GameState state) {
             this.state = state;
         }
+
+        public Board getBoard() {
+            return board;
+        }
+
+        public void setBoard(Board board) {
+            this.board = board;
+        }
+
+        public Player[] getPlayer() {
+            return player;
+        }
+
+        public void setPlayer(Player[] player) {
+            this.player = player;
+        }
+
+        public GameNotification getNotification() {
+            return notification;
+        }
+
+        public void setNotification(GameNotification notification) {
+            this.notification = notification;
+        }
+
+        public Player.MoveNotification getMoveNotification() {
+            return moveNotification;
+        }
+
+        public void setMoveNotification(Player.MoveNotification moveNotification) {
+            this.moveNotification = moveNotification;
+        }
+
+        /**
+         * Get the value of player at specified index
+         *
+         * @param index
+         * @return the value of player at specified index
+         */
+        public Player getPlayer(int index) {
+            return this.player[index];
+        }
+
+
+        /**
+         * Set the value of player at specified index.
+         *
+         * @param index
+         * @param newPlayer new value of player at specified index
+         */
+        public void setPlayer(int index, Player newPlayer) {
+            if (this.player[index] != null)
+                this.player[index].interruptMove();
+
+            this.player[index] = newPlayer;
+        }
+
+    }
+    //endregion
+
+    private Thread gameThread;
+    private volatile boolean stopGameThread;
+    private Deque<Tracker> history = new ConcurrentLinkedDeque<>();
+
+    public void finalize() {
+        stopGameThread = true;
     }
 
     /**
-     * Gets the player that will make the next move.
+     * Executes on game on a separate thread.
+     * At most one game can be active at a time.
      */
-    public Player getNextPlayer() {
-        switch (state) {
-            case TURN_PLAYER_0:
-                return player[0];
-            case TURN_PLAYER_1:
-                return player[1];
-            default:
-                return null;
+    public synchronized void executeOneGame(
+            Handler uiThreadHandler,
+            Function<BoardValue, SharedPreferences> prefs,
+            Optional<Tracker> tracker) {
+
+        if (gameThread != null) {
+            stopGameThread = true;
+            try {
+                gameThread.join(5000);
+            } catch (InterruptedException e) {
+            }
+            stopGameThread = false;
+        }
+
+        gameThread = new Thread(() -> runOneGame(uiThreadHandler, prefs, tracker));
+        gameThread.setName("game");
+        gameThread.start();
+    }
+
+    public Optional<Tracker> getGameState() {
+        return Optional.ofNullable(history.isEmpty() ? null : history.peek());
+    }
+
+    private void runOneGame(
+            Handler uiThreadHandler,
+            Function<BoardValue, SharedPreferences> prefs,
+            Optional<Tracker> inTracker) {
+
+        Tracker tracker = inTracker.orElse(newGame());
+
+        while (tracker.getState() != GameState.GAME_OVER && !stopGameThread) {
+            if (applyPreferences(prefs, tracker)) {
+                sendRedrawRequest(uiThreadHandler, tracker);
+            }
+
+            if (!tracker.getNextPlayer().isComputer()) {
+                history.push(tracker);
+            }
+
+            tracker = Flux
+                    .just(tracker)
+                    .flatMap(trkr -> nextTurn(trkr))
+                    .doOnNext(trkr -> Log.d(TAG, "game: " + trkr.toString()))
+                    // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.
+                    //       Would really like to avoid the Handler.
+                    .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
+                    .doOnError(error -> sendRedrawRequest(uiThreadHandler, null)) // FIXME
+                    .blockLast();
         }
     }
 
-    //
-    // ------------ Bean Pattern ------------
-    //
-    protected Board board;
+    private Tracker newGame() {
+        Log.i(TAG, "newGame");
 
+        Tracker tracker = new Tracker();
+        tracker.state = GameState.TURN_PLAYER_0;
+        tracker.board = new Board();
 
-    /**
-     * Get the value of board
-     *
-     * @return the value of board
-     */
-    public Board getBoard() {
-        return board;
-    }
-
-
-    protected GameState state;
-
-
-    /**
-     * Get the value of state
-     *
-     * @return the value of state
-     */
-    public GameState getState() {
-        return state;
-    }
-
-
-    protected Player[] player = new Player[2];
-
-
-    /**
-     * Get the value of player
-     *
-     * @return the value of player
-     */
-    public Player[] getPlayer() {
-        return player;
+        return tracker;
     }
 
 
     /**
-     * Get the value of player at specified index
-     *
-     * @param index
-     * @return the value of player at specified index
+     * Sends redraw request to UI thread.
      */
-    public Player getPlayer(int index) {
-        return this.player[index];
+    private void sendRedrawRequest(Handler handler, Tracker tracker) {
+        Message msg = handler.obtainMessage(MainActivity.MSG_NOTIFICATION, tracker);
+        msg.sendToTarget();
     }
 
+    private boolean applyPreferences(Function<BoardValue, SharedPreferences> prefs, Tracker tracker) {
+        boolean rv0 = applyPreferences(prefs, tracker, BoardValue.BLACK, 0);
+        boolean rv1 = applyPreferences(prefs, tracker, BoardValue.WHITE, 1);
 
-    /**
-     * Set the value of player at specified index.
-     *
-     * @param index
-     * @param newPlayer new value of player at specified index
-     */
-    public void setPlayer(int index, Player newPlayer) {
-        if (this.player[index] != null)
-            this.player[index].interruptMove();
-
-        this.player[index] = newPlayer;
+        return rv0 || rv1;
     }
 
+    private boolean applyPreferences(Function<BoardValue, SharedPreferences> prefsFn, GameExecutor.Tracker tracker, BoardValue color, int index) {
+        try {
+            SharedPreferences prefs = prefsFn.apply(color);
 
-    protected int moveNumber = 0;
+            Player oldPlayer = tracker.getPlayer(index);
 
+            if (prefs.getBoolean(PlayerSettingsFragment.KEY_ISCOMPUTER, false)) {
+                ComputerPlayer cplayer = new ComputerPlayer(color);
 
-    /**
-     * Get the value of moveNumber
-     *
-     * @return the value of moveNumber
-     */
-    public int getMoveNumber() {
-        return moveNumber;
+                cplayer.setMaxDepth(Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_LOOKAHEAD, "4")));
+                cplayer.setStrategy(StrategyFactory.getObject(prefs.getString(PlayerSettingsFragment.KEY_STRATEGY, "")));
+
+                tracker.setPlayer(index, cplayer);
+
+                return (oldPlayer == null) || !oldPlayer.isComputer();
+            } else {
+                tracker.setPlayer(index, new HumanPlayer(color));
+
+                return (oldPlayer == null) || oldPlayer.isComputer();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Cannot apply preferences", e);
+        }
+
+        return false;
+    }
+
+    public Flux<Tracker> nextTurn(Tracker inTracker) {
+
+        return Flux
+                .just(inTracker)
+                .flatMap(tracker -> {
+
+                    switch (tracker.state) {
+                        case TURN_PLAYER_0:
+                        case TURN_PLAYER_1: {
+                            Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];
+                            return me.makeMove(tracker.board)
+                                    // FIXME flatmap to Mono and avoid the generator?
+                                    .zipWith(Flux.generate(() -> 0,
+                                            (state, sink) -> {
+                                                sink.next(tracker);
+                                                return 0;
+                                            }));
+                        }
+
+                        default:
+                            Log.w(TAG, "executeOneTurn: unexpectedly called while in state=" + tracker.state);
+                            return Flux.error(new IllegalStateException("game state"));
+                    }
+                })
+                .map(t -> {
+                    Tracker tracker = (Tracker) t.getT2();
+                    tracker.moveNotification = t.getT1();
+                    return tracker;
+                })
+                .doOnNext(tracker -> {
+                    tracker.board.makeMove(tracker.moveNotification.getMove());
+                })
+                .map(tracker -> {
+                    Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];
+                    if (tracker.board.hasValidMove(me.getColor().otherPlayer())) {
+                        tracker.state = tracker.state == GameState.TURN_PLAYER_0
+                                ? GameState.TURN_PLAYER_1 : GameState.TURN_PLAYER_0;
+                    } else if (!tracker.board.hasValidMove(me.getColor())) {
+                        tracker.state = GameState.GAME_OVER;
+                    }
+                    return tracker;
+                });
+
     }
 
 }

@@ -21,7 +21,6 @@ package ca.provenpath.othello;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,211 +28,179 @@ import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
 import android.widget.GridView;
+import ca.provenpath.othello.game.*;
 
-import ca.provenpath.othello.game.Board;
-import ca.provenpath.othello.game.BoardValue;
-import ca.provenpath.othello.game.ComputerPlayer;
-import ca.provenpath.othello.game.GameExecutor;
-import ca.provenpath.othello.game.GameExecutorSerializer;
-import ca.provenpath.othello.game.HumanPlayer;
-import ca.provenpath.othello.game.Move;
-import ca.provenpath.othello.game.Player;
-import ca.provenpath.othello.game.Position;
-import ca.provenpath.othello.game.StrategyFactory;
-import ca.provenpath.othello.game.observer.GameState;
+import java.util.Optional;
 
-
-public class MainActivity extends AppCompatActivity
-{
-    public final static String TAG = MainActivity.class.getName();
+public class MainActivity extends AppCompatActivity {
+    public static final String TAG = MainActivity.class.getName();
 
     /*
      * ====================================================================
-     *
-     * Life cycle methods
-     *
+     */
+    // region [Life cycle methods]
+    /*
      * --------------------------------------------------------------------
      */
 
     @Override
-    protected void onCreate( Bundle savedInstanceState )
-    {
-        Log.i( TAG, "onCreate" );
+    protected void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, "onCreate");
 
-        super.onCreate( savedInstanceState );
+        super.onCreate(savedInstanceState);
 
-        PreferenceManager.setDefaultValues( this, R.xml.preferences, false );
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
-        if (savedInstanceState != null)
-        {
-            mExecutor = GameExecutorSerializer.deserialize( savedInstanceState.getString( KEY_EXECUTOR ) );
-            mLastMoveExecutorSerial = savedInstanceState.getString( KEY_LAST_MOVE );
+        Optional<GameExecutor.Tracker> tracker = Optional.empty();
+        if (savedInstanceState != null) {
+            tracker =
+                    Optional.of(
+                            GameExecutorSerializer.deserialize(savedInstanceState.getString(KEY_EXECUTOR)));
+            mLastMoveExecutorSerial = savedInstanceState.getString(KEY_LAST_MOVE);
         }
 
-        setContentView( R.layout.activity_main );
-        setSupportActionBar( findViewById( R.id.toolbar ) );
+        setContentView(R.layout.activity_main);
+        setSupportActionBar(findViewById(R.id.toolbar));
 
-        mBoardAdaptor = new BoardAdapter( this );
-        GridView gridview = findViewById( R.id.gridview );
-        gridview.setAdapter( mBoardAdaptor );
+        mBoardAdaptor = new BoardAdapter(this);
+        GridView gridview = findViewById(R.id.gridview);
+        gridview.setAdapter(mBoardAdaptor);
 
-        gridview.setOnItemClickListener((parent, v, position, id) -> {
-            // Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
-            attemptMove( position );
-        });
+        gridview.setOnItemClickListener(
+                (parent, v, position, id) -> {
+                    // Toast.makeText( MainActivity.this, "" + position, Toast.LENGTH_SHORT ).show();
+                    attemptMove(position);
+                });
 
-        /*
-        gridview.setOnItemLongClickListener( new AdapterView.OnItemLongClickListener()
+    /*
+    gridview.setOnItemLongClickListener( new AdapterView.OnItemLongClickListener()
+    {
+        @Override
+        public boolean onItemLongClick( AdapterView<?> parent, View v, int position, long id )
         {
-            @Override
-            public boolean onItemLongClick( AdapterView<?> parent, View v, int position, long id )
-            {
-                simulateMove( position );
-                return true;
-            }
-        } );
-        */
+            simulateMove( position );
+            return true;
+        }
+    } );
+    */
 
-
-        findViewById( R.id.undo ).setOnClickListener(v -> undoGame());
-        findViewById( R.id.newgame ).setOnClickListener(v -> newGame());
+        findViewById(R.id.undo).setOnClickListener(v -> undoGame());
+        findViewById(R.id.newgame).setOnClickListener(v -> runGame(Optional.empty()));
 
         /*
          * Process requests on the UI thread.
          */
-        mHandler = new Handler( Looper.getMainLooper() )
-        {
-            @Override
-            public void handleMessage( Message msg )
-            {
-                switch (msg.what)
-                {
-                    case MSG_REDRAW:
-                        updateDisplay( GameExecutorSerializer.deserialize( (String) msg.obj ) );
-                        break;
+        mHandler =
+                new Handler(Looper.getMainLooper()) {
+                    @Override
+                    public void handleMessage(Message msg) {
+                        switch (msg.what) {
+                            case MSG_NOTIFICATION: {
+                                GameExecutor.Tracker tracker = (GameExecutor.Tracker) msg.obj;
+                                updateDisplay(tracker);
+                                break;
+                            }
 
-                    default:
-                        super.handleMessage( msg );
-                        break;
-                }
-            }
-        };
+                            default:
+                                super.handleMessage(msg);
+                                break;
+                        }
+                    }
+                };
 
         // Do this after everything is initialized
-        if (mExecutor == null)
-        {
-            newGame();
-        }
-        else
-        {
-            runExecutor( mExecutor );
-        }
+        runGame(tracker);
     }
 
     @Override
-    protected void onDestroy()
-    {
-        Log.i( TAG, "onDestroy" );
+    protected void onDestroy() {
+        Log.i(TAG, "onDestroy");
 
-        if (mExecutor != null)
-            mExecutor.endGame();
+        GameExecutor.instance().finalize();
 
         super.onDestroy();
     }
 
     @Override
-    protected void onSaveInstanceState( Bundle bundle )
-    {
-        Log.i( TAG, "onSaveInstanceState" );
+    protected void onSaveInstanceState(Bundle bundle) {
+        Log.i(TAG, "onSaveInstanceState");
 
-        super.onSaveInstanceState( bundle );
+        super.onSaveInstanceState(bundle);
 
-        if (mExecutor != null)
-            bundle.putString( KEY_EXECUTOR, GameExecutorSerializer.serialize( mExecutor ) );
+        GameExecutor.instance().getGameState()
+                .map(tracker -> {
+                    String serial = GameExecutorSerializer.serialize(tracker);
+                    bundle.putString(KEY_EXECUTOR, serial);
+                    return serial;
+                });
 
-        if (mLastMoveExecutorSerial != null)
-            bundle.putString( KEY_LAST_MOVE, mLastMoveExecutorSerial );
+        if (mLastMoveExecutorSerial != null) bundle.putString(KEY_LAST_MOVE, mLastMoveExecutorSerial);
     }
 
     @Override
-    protected void onRestoreInstanceState( Bundle bundle )
-    {
-        Log.i( TAG, "onSaveInstanceState" );
+    protected void onRestoreInstanceState(Bundle bundle) {
+        Log.i(TAG, "onSaveInstanceState");
 
-        super.onRestoreInstanceState( bundle );
+        super.onRestoreInstanceState(bundle);
     }
 
-
+    // endregion
 
     /*
      * ====================================================================
-     *
-     * Option menu methods
-     *
+     */
+    // region [Option menu methods]
+    /*
      * --------------------------------------------------------------------
      */
 
     @Override
-    public boolean onCreateOptionsMenu( Menu menu )
-    {
+    public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate( R.menu.menu_main, menu );
+        getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected( MenuItem item )
-    {
+    public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings)
-        {
-            Intent intent = new Intent( this, SettingsActivity.class );
-            startActivity( intent );
+        if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
             return true;
-        }
-        else if (id == R.id.action_about)
-        {
-            new AboutDialog().show( getFragmentManager(), null );
+        } else if (id == R.id.action_about) {
+            new AboutDialog().show(getFragmentManager(), null);
             return true;
-        }
-        else if (id == R.id.action_help)
-        {
+        } else if (id == R.id.action_help) {
             // Cheat by sending user off to a web site
             Intent helpIntent = new Intent();
-            helpIntent.setAction( Intent.ACTION_VIEW );
-            helpIntent.setData( Uri.parse( getResources().getString( R.string.help_url ) ) );
+            helpIntent.setAction(Intent.ACTION_VIEW);
+            helpIntent.setData(Uri.parse(getResources().getString(R.string.help_url)));
 
             // Verify that the intent will resolve to an activity
-            if (helpIntent.resolveActivity( getPackageManager() ) != null)
-            {
-                startActivity( helpIntent );
+            if (helpIntent.resolveActivity(getPackageManager()) != null) {
+                startActivity(helpIntent);
                 return true;
+            } else {
+                Log.w(TAG, "No takers for intent: " + getResources().getText(R.string.help_url));
             }
-            else
-            {
-                Log.w( TAG, "No takers for intent: " + getResources().getText( R.string.help_url ) );
-            }
-        }
-        else if (id == R.id.action_exit)
-        {
+        } else if (id == R.id.action_exit) {
             finish();
         }
 
-        return super.onOptionsItemSelected( item );
+        return super.onOptionsItemSelected(item);
     }
 
+    // endregion
 
     /*
      * ====================================================================
@@ -246,209 +213,76 @@ public class MainActivity extends AppCompatActivity
     /**
      * (Re)initializes the game state.
      */
-    private void newGame()
-    {
-        if (mExecutor != null)
-        {
-            mExecutor.endGame();
-        }
-
-        mExecutor = new GameExecutor();
-
-        mExecutor.newGame();
-        runExecutor( mExecutor );
+    private void runGame(Optional<GameExecutor.Tracker> tracker) {
+        GameExecutor.instance()
+                .executeOneGame(
+                        mHandler,
+                        color -> getSharedPreferences(
+                                PlayerSettingsFragment.getSharedPreferencesName(color.name()),
+                                Context.MODE_PRIVATE),
+                        tracker);
     }
 
     /**
      * Restores an earlier game state, if possible.
      */
-    private void undoGame()
-    {
-        if (mLastMoveExecutorSerial != null)
-        {
-            GameExecutor lastMoveExecutor = GameExecutorSerializer.deserialize( mLastMoveExecutorSerial );
+    private void undoGame() {
+        if (mLastMoveExecutorSerial != null) {
+            Optional<GameExecutor.Tracker> lastState =
+                    Optional.ofNullable(GameExecutorSerializer.deserialize(mLastMoveExecutorSerial));
 
-            if (lastMoveExecutor != null)
-            {
-                if (mExecutor != null)
-                {
-                    mExecutor.endGame();
-                }
-
-                mExecutor = lastMoveExecutor;
-
-                runExecutor( mExecutor );
-            }
-
-            mLastMoveExecutorSerial = null;
+            runGame(lastState);
         }
     }
 
-    private void runExecutor( final GameExecutor executor )
-    {
-        if (executor != null)
-        {
-            new Thread("GameExecutor" )
-            {
-                @Override
-                public void run()
-                {
-                    sendRedrawRequest( executor );
-
-                    while (executor.getState() != GameState.GAME_OVER)
-                    {
-                        if( applyPreferences( executor ) )
-                        {
-                            sendRedrawRequest( executor );
-                        }
-
-                        // This is to provide a visible pause for fast computer moves.
-                        long delay = 2000;
-                        long noMoveBefore = System.currentTimeMillis() + delay;
-
-                        boolean isComputerPlayer = executor.getNextPlayer().isComputer();
-
-                        executor.executeOneTurn();
-
-                        if (isComputerPlayer)
-                        {
-                            try
-                            {
-                                Thread.sleep( Math.max( 0, noMoveBefore - System.currentTimeMillis() ) );
-                            }
-                            catch (InterruptedException e)
-                            {
-                            }
-                        }
-
-                        sendRedrawRequest( executor );
-                    }
-                }
-            }.start();
-        }
-    }
-
-    /** Sends redraw request to UI thread. */
-    private void sendRedrawRequest( GameExecutor executor )
-    {
-        Message msg = mHandler.obtainMessage( MSG_REDRAW );
-        msg.obj = GameExecutorSerializer.serialize( executor );
-        msg.sendToTarget();
-    }
-
-    private boolean applyPreferences( GameExecutor executor )
-    {
-        boolean rv0 = applyPreferences( executor, BoardValue.BLACK, 0 );
-        boolean rv1 = applyPreferences( executor, BoardValue.WHITE, 1 );
-
-        return rv0 || rv1;
-    }
-
-    private boolean applyPreferences( GameExecutor executor, BoardValue color, int index )
-    {
-        try
-        {
-            SharedPreferences prefs = getSharedPreferences(
-                    PlayerSettingsFragment.getSharedPreferencesName( color.name() ),
-                    Context.MODE_PRIVATE );
-
-            Player oldPlayer = executor.getPlayer( index );
-
-            if (prefs.getBoolean( PlayerSettingsFragment.KEY_ISCOMPUTER, false ))
-            {
-                ComputerPlayer cplayer = new ComputerPlayer( color );
-
-                cplayer.setMaxDepth( Integer.parseInt( prefs.getString( PlayerSettingsFragment.KEY_LOOKAHEAD, "4" ) ) );
-                cplayer.setStrategy( StrategyFactory.getObject( prefs.getString( PlayerSettingsFragment.KEY_STRATEGY, "" ) ) );
-
-                executor.setPlayer( index, cplayer );
-
-                return (oldPlayer == null) || !oldPlayer.isComputer();
-            }
-            else
-            {
-                executor.setPlayer( index, new HumanPlayer( color ) );
-
-                return (oldPlayer == null) || oldPlayer.isComputer();
-            }
-        }
-        catch (Exception e)
-        {
-            Log.w( TAG, "Cannot apply preferences", e );
-        }
-
-        return false;
-    }
-
-    private void updateDisplay( GameExecutor executor )
-    {
+    private void updateDisplay(GameExecutor.Tracker tracker) {
         GameStatusFragment statusFragment =
-                (GameStatusFragment) getSupportFragmentManager().findFragmentById( R.id.status_fragment );
+                (GameStatusFragment) getSupportFragmentManager().findFragmentById(R.id.status_fragment);
 
-        if (statusFragment != null)
-        {
-            statusFragment.update( executor );
+        if (statusFragment != null) {
+            statusFragment.update(tracker);
 
-            findViewById( R.id.undo ).setEnabled( mLastMoveExecutorSerial != null );
+            findViewById(R.id.undo).setEnabled(mLastMoveExecutorSerial != null);
 
-            if (executor == null)
-            {
-                mBoardAdaptor.redraw( null, BoardValue.EMPTY );
-            }
-            else
-            {
-                showValidMoves( executor );
+            if (tracker == null) {
+                mBoardAdaptor.redraw(null, BoardValue.EMPTY);
+            } else {
+                showValidMoves(tracker);
             }
         }
     }
 
-    private void showValidMoves( GameExecutor executor )
-    {
+    private void showValidMoves(GameExecutor.Tracker tracker) {
         // Only for human player
-        Player player = executor.getNextPlayer();
+        Player player = tracker.getNextPlayer();
 
-        if ((player != null) && !player.isComputer())
-        {
-            Board boardWithValid = (Board) mExecutor.getBoard().clone();
+        if ((player != null) && !player.isComputer()) {
+            BoardValue validMoveFilter =
+                    (player.getColor() == BoardValue.BLACK) ? BoardValue.VALID_BLACK : BoardValue.VALID_WHITE;
 
-            BoardValue validMoveFilter = (player.getColor() == BoardValue.BLACK)
-                ? BoardValue.VALID_BLACK
-                : BoardValue.VALID_WHITE;
-
-            mBoardAdaptor.redraw( boardWithValid, validMoveFilter );
-        }
-        else
-        {
-            mBoardAdaptor.redraw( executor.getBoard(), BoardValue.EMPTY );
+            mBoardAdaptor.redraw(tracker.getBoard(), validMoveFilter);
+        } else {
+            mBoardAdaptor.redraw(tracker.getBoard(), BoardValue.EMPTY);
         }
     }
 
-    private void attemptMove( int position )
-    {
-        if (mExecutor != null)
-        {
-            Player human = mExecutor.getNextPlayer();
-            if ((human != null) && !human.isComputer())
-            {
-                // FIXME this breaks encapsulation.  Probably should have the game executor
-                // track undo moves.
-                if (mExecutor.getBoard().isValidMove( new Move( human.getColor(), new Position( position ) ) ))
-                {
-                    mLastMoveExecutorSerial = GameExecutorSerializer.serialize( mExecutor );
-                }
-
-                ((HumanPlayer) human).attemptMove( position );
+    private void attemptMove(int position) {
+        Optional<GameExecutor.Tracker> oTracker = GameExecutor.instance().getGameState();
+        if (oTracker.isPresent()) {
+            GameExecutor.Tracker tracker = oTracker.get();
+            Player human = tracker.getNextPlayer();
+            if ((human != null) && !human.isComputer()) {
+                ((HumanPlayer) human).attemptMove(position);
             }
         }
     }
 
-    private final static int MSG_REDRAW = 341;
+    public static final int MSG_NOTIFICATION = 342;
 
-    private final static String KEY_EXECUTOR = MainActivity.class.getName() + ".executor";
-    private final static String KEY_LAST_MOVE = MainActivity.class.getName() + ".lastMove";
+    private static final String KEY_EXECUTOR = MainActivity.class.getName() + ".executor-1";
+    private static final String KEY_LAST_MOVE = MainActivity.class.getName() + ".lastMove-1";
 
     private Handler mHandler;
-    private GameExecutor mExecutor;
     private String mLastMoveExecutorSerial;
     private BoardAdapter mBoardAdaptor;
 }

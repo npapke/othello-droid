@@ -36,7 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Serializes and deserializes GameExcutors.
+ * Serializes and deserializes GameExcutors.  All non-transient state is in the Tracker.
  *
  * Note: The reason this exists is because Players
  * are polymorphic and Gson (really Json) cannot handle it
@@ -48,19 +48,19 @@ public class GameExecutorSerializer
 {
     public final static String TAG = GameExecutorSerializer.class.getName();
 
-    public static GameExecutor deserialize( String serial )
+    public static GameExecutor.Tracker deserialize( String serial )
     {
-        GameExecutor executor = null;
+        GameExecutor.Tracker tracker = null;
 
         try
         {
             Gson deserializer = new GameExecutorSerializer().makeGson();
             Log.d( TAG, "serialized=" + serial );
 
-            executor = deserializer.fromJson( serial, GameExecutor.class );
-            if (executor != null && !executor.isConsistent())
+            tracker = deserializer.fromJson( serial, GameExecutor.Tracker.class );
+            if (tracker != null && !tracker.isConsistent())
             {
-                executor = null;
+                tracker = null;
             }
         }
         catch (Exception e)
@@ -68,16 +68,10 @@ public class GameExecutorSerializer
             Log.w( TAG, "deserialize", e );
         }
 
-        if (executor == null)
-        {
-            executor = new GameExecutor();
-            executor.newGame();
-        }
-
-        return executor;
+        return tracker;
     }
 
-    public static String serialize( GameExecutor src )
+    public static String serialize( GameExecutor.Tracker src )
     {
         try
         {

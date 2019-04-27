@@ -97,5 +97,5 @@ public class HumanPlayer extends Player {
         private Move mMove;
     }
 
-    private transient FluxSink moveSink;
+    private transient volatile FluxSink moveSink;
 }
