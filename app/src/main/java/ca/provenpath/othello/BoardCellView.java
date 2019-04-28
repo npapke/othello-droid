@@ -2,11 +2,11 @@ package ca.provenpath.othello;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.ColorFilter;
-import android.graphics.Paint;
-import android.graphics.PixelFormat;
+import android.content.res.Resources;
+import android.graphics.*;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
+import android.os.CpuUsageInfo;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
@@ -18,30 +18,35 @@ import java.util.Optional;
 public class BoardCellView extends android.support.v7.widget.AppCompatImageView {
     public final static String TAG = BoardCellView.class.getName();
 
-    private class TextDrawable extends Drawable {
+    private static class TextDrawable extends Drawable {
 
+        Paint paint = new Paint();
         String text;
 
         public TextDrawable(String text) {
+            paint.setARGB(255, 128, 128, 128);
+            paint.setAntiAlias(true);
             this.text = text;
+
         }
 
         @Override
         public void draw(@NonNull Canvas canvas) {
+            Log.d(TAG, String.format("Drawing on canvas. w=%d, h%d", getBounds().width(), getBounds().height()));
 
-            Paint paint = new Paint();
-            paint.setARGB(255, 0, 128, 128);
-            canvas.drawText(text, 0.0f, 0.0f, paint);
+            paint.setColor(Color.DKGRAY);
+            paint.setTextSize(50);
+            canvas.drawText(text, getBounds().width() * 0.1f, getBounds().height() * 0.3f, paint);
         }
 
         @Override
         public void setAlpha(int alpha) {
-
+            paint.setAlpha(alpha);
         }
 
         @Override
         public void setColorFilter(@Nullable ColorFilter colorFilter) {
-
+            paint.setColorFilter(colorFilter);
         }
 
         @Override
@@ -66,8 +71,10 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
 
     public void draw(BoardValue boardValue, BoardValue moveFilter) {
 
+        setForeground(null);
         int resId = resourceForCell(boardValue, moveFilter);
         if (!lastResId.isPresent() || (lastResId.isPresent() && lastResId.get() != resId)) {
+
             setImageResource(resId);
 
             if (lastResId.isPresent()) {
@@ -90,7 +97,6 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
                         } else {
                             // this piece was flipped
                             setBackgroundResource(lastResId.get());
-                            setImageAlpha(0);
                             animator.setStartDelay(500);
                             animator.setDuration(1500);
                         }
@@ -118,7 +124,14 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
     }
 
     public void drawText(String text) {
-        setImageDrawable(new TextDrawable(text));
+        Log.d(TAG, "drawText: " + text);
+
+        Drawable foreground = new TextDrawable(text);
+        setForeground(foreground);
+    }
+
+    private void draw() {
+//        LayerDrawable layes = new LayerDrawable();
     }
 
     private int resourceForCell(BoardValue bv, BoardValue moveFilter) {

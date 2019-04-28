@@ -84,24 +84,5 @@ public class HumanPlayer extends Player {
         return false;
     }
 
-    /**
-     * Just an apparatus to signal "no move"
-     */
-    private class HumanMove {
-        public HumanMove() {
-            mMove = null;
-        }
-
-        public HumanMove(int lvalue) {
-            mMove = new Move(getColor(), new Position(lvalue));
-        }
-
-        public Move getMove() {
-            return mMove;
-        }
-
-        private Move mMove;
-    }
-
     private transient volatile FluxSink<Optional<Integer>> moveSink;
 }

@@ -242,8 +242,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         findViewById(R.id.undo).setEnabled(
-                GameExecutor.instance().getUndoGameState().isPresent() &&
-                        !tracker.getNextPlayer().isComputer());
+                GameExecutor.instance().getUndoGameState().isPresent());
     }
 
     private void showValidMoves(GameExecutor.Tracker tracker) {

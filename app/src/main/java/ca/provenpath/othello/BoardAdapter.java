@@ -98,6 +98,8 @@ public class BoardAdapter extends BaseAdapter {
 
         imageView.invalidate();
 
+        boardCellViews[position] = imageView;
+
         return imageView;
     }
 
@@ -111,9 +113,14 @@ public class BoardAdapter extends BaseAdapter {
 
     public void draw(int linear, String valueOf) {
         Log.d(TAG, String.format("%d = %s", linear, valueOf));
+
+        if( boardCellViews[linear] != null) {
+            boardCellViews[linear].drawText(valueOf);
+        }
     }
 
     private Context mContext;
     private Board mBoard = new Board();
     private BoardValue mValidMoveFilter;
+    private BoardCellView[] boardCellViews = new BoardCellView[Board.BOARD_LSIZE];
 }
