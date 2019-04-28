@@ -21,6 +21,8 @@ package ca.provenpath.othello;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,171 +34,83 @@ import android.widget.ImageView;
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
 
+import java.util.Optional;
+
 /**
  * Created by npapke on 2/22/15.
  */
-public class BoardAdapter extends BaseAdapter
-{
+public class BoardAdapter extends BaseAdapter {
     public final static String TAG = BoardAdapter.class.getName();
 
-    public BoardAdapter( Context context )
-    {
+    public BoardAdapter(Context context) {
         mContext = context;
     }
 
     @Override
-    public int getCount()
-    {
+    public int getCount() {
         return Board.BOARD_LSIZE;
     }
 
     @Override
-    public Object getItem( int position )
-    {
-        return mBoard.getLvalue( position );
+    public Object getItem(int position) {
+        return mBoard.getLvalue(position);
     }
 
     @Override
-    public long getItemId( int position )
-    {
+    public long getItemId(int position) {
         return position;
     }
 
     @Override
-    public int getItemViewType( int position )
-    {
+    public int getItemViewType(int position) {
         return Adapter.IGNORE_ITEM_VIEW_TYPE;
     }
 
     @Override
-    public int getViewTypeCount()
-    {
+    public int getViewTypeCount() {
         return 1;
     }
 
     @Override
-    public boolean hasStableIds()
-    {
+    public boolean hasStableIds() {
         return true;
     }
 
     @Override
-    public View getView( int position, View convertView, ViewGroup parent )
-    {
-        ImageView imageView;
-        if (convertView == null)
-        {
+    public View getView(int position, View convertView, ViewGroup parent) {
+        BoardCellView imageView;
+        if (convertView == null) {
             // if it's not recycled, initialize some attributes
-            imageView = new ImageView( mContext );
+            imageView = new BoardCellView(mContext);
 
-            int size = Math.min( parent.getHeight(), parent.getWidth() ) / 8;
+            int size = Math.min(parent.getHeight(), parent.getWidth()) / 8;
 
             //Log.v( TAG, String.format( "Position: %d, Parent size: %d x %d, Tile size: %d",
             //    position, parent.getWidth(), parent.getHeight(), size ) );
 
-            imageView.setLayoutParams( new GridView.LayoutParams( size, size ) );
-            imageView.setScaleType( ImageView.ScaleType.FIT_XY );
-            imageView.setPadding( 0, 0, 0, 0 );
-            imageView.setAdjustViewBounds( true );
-        }
-        else
-        {
-            imageView = (ImageView) convertView;
+            imageView.setLayoutParams(new GridView.LayoutParams(size, size));
+            imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+            imageView.setPadding(0, 0, 0, 0);
+            imageView.setAdjustViewBounds(true);
+        } else {
+            imageView = (BoardCellView) convertView;
         }
 
-        BoardValue bv = mBoard.getLvalue( position );
-        int resource = resourceForCell( bv );
-        imageView.setImageResource( resource );
-
-        // FIXME We really need to compare the old resource, not the boardvalue.
-        boolean isAnimated = !bv.equals( mOldBoard.getLvalue( position ) )
-                || (resource == R.drawable.ic_cell_valid);
-
-        if (isAnimated)
-        {
-            ObjectAnimator animator = ObjectAnimator.ofInt( imageView, "imageAlpha", 0, 255 );
-            animator.setAutoCancel( true );
-
-            switch (bv)
-            {
-                case BLACK:
-                case WHITE:
-                {
-                    // "Fade in" animation for changed tiles
-                    boolean isLastMove = (mBoard.getLastMove() != null)
-                        && (position == mBoard.getLastMove().getPosition().getLinear());
-                    if (isLastMove)
-                    {
-                        // user placed this piece
-                        imageView.setBackgroundResource( resourceForCell( BoardValue.EMPTY ) );
-
-                        animator.setDuration( 250 );
-                        animator.setRepeatCount( 4 );
-                        animator.setRepeatMode( ObjectAnimator.REVERSE );
-                    }
-                    else
-                    {
-                        // this piece was flipped
-                        imageView.setBackgroundResource( resourceForCell( mOldBoard.getLvalue( position ) ) );
-
-                        imageView.setImageAlpha( 0 );
-                        animator.setStartDelay( 500 );
-                        animator.setDuration( 1500 );
-                    }
-
-                    break;
-                }
-
-                default:
-                {
-                    // valid moves
-                    imageView.setBackgroundResource( resourceForCell( BoardValue.EMPTY ) );
-                    imageView.setImageAlpha( 0 );
-
-                    animator.setStartDelay( 1000 );
-                    animator.setDuration( 3000 );
-                    break;
-                }
-            }
-
-            animator.start();
-        }
+        BoardValue bv = mBoard.getLvalue(position);
+        imageView.draw(bv, mValidMoveFilter);
 
         return imageView;
     }
 
-    public void redraw( Board newBoard, BoardValue validMoveFilter )
-    {
-        mOldBoard = mBoard;
+
+    public void redraw(Board newBoard, BoardValue validMoveFilter) {
         mValidMoveFilter = validMoveFilter;
         mBoard = (newBoard == null) ? new Board() : (Board) newBoard.clone();
 
         notifyDataSetChanged();
     }
 
-    private int resourceForCell( BoardValue bv )
-    {
-        switch (bv)
-        {
-            case BLACK:
-                return R.drawable.ic_cell_black;
-            case WHITE:
-                return R.drawable.ic_cell_white;
-            case EMPTY:
-                return R.drawable.ic_cell_empty;
-
-            case VALID_BLACK:
-            case VALID_WHITE:
-            case VALID_BOTH:
-            default:
-                return (((bv == BoardValue.VALID_BOTH) && (mValidMoveFilter != BoardValue.EMPTY)) || (bv == mValidMoveFilter))
-                        ? R.drawable.ic_cell_valid
-                        : R.drawable.ic_cell_empty;
-        }
-    }
-
     private Context mContext;
     private Board mBoard = new Board();
-    private Board mOldBoard = new Board();
     private BoardValue mValidMoveFilter;
 }
