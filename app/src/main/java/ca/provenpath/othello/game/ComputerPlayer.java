@@ -22,11 +22,21 @@ package ca.provenpath.othello.game;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
+import ca.provenpath.othello.game.observer.AnalysisNotification;
+import ca.provenpath.othello.game.observer.GameNotification;
+import ca.provenpath.othello.game.observer.MoveNotification;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
+import java.time.temporal.TemporalUnit;
 import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 /**
  * A computer player.  Automatically determines the optimal move for
@@ -57,9 +67,9 @@ public class ComputerPlayer extends Player {
      * @return
      */
     @Override
-    public Flux<MoveNotification> makeMove(Board board) {
+    public Flux<GameNotification> makeMove(Board board) {
 
-        Flux<MoveNotification> move = Flux
+        Flux<GameNotification> move = Flux
                 .create(sink -> {
 
                     Assert.notNull(color);
@@ -70,7 +80,11 @@ public class ComputerPlayer extends Player {
                     isInterrupted = false;
 
                     Stats stats = new Stats();
-                    MiniMaxResult result = minimaxAB(board, color, maxDepth, stats);
+                    MiniMaxResult result = minimaxAB(board, color, maxDepth, stats,
+                            notification -> {
+                                Log.d(TAG, "to sink: " + notification);
+                                sink.next(notification);
+                            });
 
                     Assert.notNull(result.getBestPosition());
 
@@ -81,9 +95,16 @@ public class ComputerPlayer extends Player {
                             duration,
                             duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999));
 
-                    sink.next(new MoveNotification(true, new Move(color, result.getBestPosition()), board));
+                    sink.next(new MoveNotification(new Move(color, result.getBestPosition())));
                     sink.complete();
 
+                })
+                .concatMap(notification -> {
+                    Flux<GameNotification> result = Flux.just((GameNotification) notification);
+
+                    return (notification instanceof MoveNotification)
+                            ? result.delaySubscription(Duration.of(2, SECONDS))
+                            : result;
                 });
 
         return move.subscribeOn(Schedulers.newSingle("engine"));
@@ -118,7 +139,8 @@ public class ComputerPlayer extends Player {
             Board board,
             BoardValue player,
             int depth,
-            Stats stats) {
+            Stats stats,
+            Consumer<GameNotification> notificationSinkFn) {
         final PriorityQueue<MiniMaxResult> candidates = new PriorityQueue<>();
         final PriorityQueue<MiniMaxResult> results = new PriorityQueue<>();
 
@@ -149,6 +171,8 @@ public class ComputerPlayer extends Player {
                 int result = minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
 
                 results.add(new MiniMaxResult(result, candidate.getBestPosition()));
+
+                notificationSinkFn.accept(new AnalysisNotification(result, candidate.getBestPosition()));
 
                 alpha = Math.max(result, alpha);
                 if (beta <= alpha)
@@ -308,43 +332,12 @@ public class ComputerPlayer extends Player {
     }
 
 
+    @AllArgsConstructor
+    @Data
     private class MiniMaxResult implements Comparable<MiniMaxResult> {
-        public MiniMaxResult(int value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return "MiniMaxResult{" +
-                    "value=" + value +
-                    ", bestMove=" + bestMove +
-                    '}';
-        }
-
-        public MiniMaxResult(int value, Position bestMove) {
-            this.value = value;
-            this.bestMove = bestMove;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-        public void setValue(int value) {
-            this.value = value;
-        }
 
         private int value;
-
-        public Position getBestPosition() {
-            return bestMove;
-        }
-
-        public void setBestMove(Position bestMove) {
-            this.bestMove = bestMove;
-        }
-
-        private Position bestMove;
+        private Position bestPosition;
 
         /**
          * Compares this object to the specified object to determine their relative

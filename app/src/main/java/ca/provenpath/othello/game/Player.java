@@ -20,6 +20,7 @@
 package ca.provenpath.othello.game;
 
 
+import ca.provenpath.othello.game.observer.GameNotification;
 import reactor.core.publisher.Flux;
 
 /**
@@ -28,47 +29,6 @@ import reactor.core.publisher.Flux;
  * @author npapke
  */
 public abstract class Player {
-    public static class MoveNotification {
-        private boolean isFinal;
-        private Move move;
-        private Board board;
-
-        public MoveNotification(boolean isFinal, Move move) {
-            this.isFinal = isFinal;
-            this.move = move;
-        }
-
-        public MoveNotification(boolean isFinal, Move move, Board board) {
-            this.isFinal = isFinal;
-            this.move = move;
-            this.board = board;
-        }
-
-        public boolean isFinal() {
-            return isFinal;
-        }
-
-        public void setFinal(boolean aFinal) {
-            isFinal = aFinal;
-        }
-
-        public Move getMove() {
-            return move;
-        }
-
-        public void setMove(Move move) {
-            this.move = move;
-        }
-
-        public Board getBoard() {
-            return board;
-        }
-
-        public void setBoard(Board board) {
-            this.board = board;
-        }
-    }
-
     public Player(BoardValue color) {
         this.color = color;
     }
@@ -85,13 +45,14 @@ public abstract class Player {
     /**
      * Gives the player the opportunity to perform a move on
      * the specified game board.
-     *  @param board the game board to make the move on
      *
+     * @param board the game board to make the move on
      */
-    public abstract Flux<MoveNotification> makeMove(Board board);
+    public abstract Flux<GameNotification> makeMove(Board board);
 
     /**
      * Suggests a move to the player.
+     *
      * @param lvalue linear position of move
      * @return true iff player accepted the suggestion
      */

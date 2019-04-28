@@ -33,6 +33,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.GridView;
 import ca.provenpath.othello.game.*;
+import ca.provenpath.othello.game.observer.AnalysisNotification;
+import ca.provenpath.othello.game.observer.GameNotification;
+import ca.provenpath.othello.game.observer.MoveNotification;
 
 import java.util.Optional;
 
@@ -57,9 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
         Optional<GameExecutor.Tracker> tracker = Optional.empty();
         if (savedInstanceState != null) {
-            tracker =
-                    Optional.of(
-                            GameExecutorSerializer.deserialize(savedInstanceState.getString(KEY_EXECUTOR)));
+            tracker = Optional.ofNullable(
+                    GameExecutorSerializer.deserialize(savedInstanceState.getString(KEY_EXECUTOR)));
         }
 
         setContentView(R.layout.activity_main);
@@ -217,22 +219,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateDisplay(GameExecutor.Tracker tracker) {
-        GameStatusFragment statusFragment =
-                (GameStatusFragment) getSupportFragmentManager().findFragmentById(R.id.status_fragment);
 
-        if (statusFragment != null) {
-            statusFragment.update(tracker);
+        GameNotification notification = tracker.getNotification();
+        if (notification == null || notification instanceof MoveNotification) {
 
-            if (tracker == null) {
-                mBoardAdaptor.redraw(null, BoardValue.EMPTY);
-            } else {
-                showValidMoves(tracker);
+            GameStatusFragment statusFragment =
+                    (GameStatusFragment) getSupportFragmentManager().findFragmentById(R.id.status_fragment);
+
+            if (statusFragment != null) {
+                statusFragment.update(tracker);
+
+                if (tracker == null) {
+                    mBoardAdaptor.redraw(null, BoardValue.EMPTY);
+                } else {
+                    showValidMoves(tracker);
+                }
             }
+        } else if (notification instanceof AnalysisNotification) {
+            mBoardAdaptor.draw(
+                    ((AnalysisNotification) notification).getPosition().getLinear(),
+                    String.valueOf(((AnalysisNotification) notification).getValue()));
         }
 
         findViewById(R.id.undo).setEnabled(
                 GameExecutor.instance().getUndoGameState().isPresent() &&
-                !tracker.getNextPlayer().isComputer());
+                        !tracker.getNextPlayer().isComputer());
     }
 
     private void showValidMoves(GameExecutor.Tracker tracker) {

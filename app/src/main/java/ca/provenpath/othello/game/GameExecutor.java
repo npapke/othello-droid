@@ -27,8 +27,12 @@ import ca.provenpath.othello.MainActivity;
 import ca.provenpath.othello.PlayerSettingsFragment;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.GameState;
+import ca.provenpath.othello.game.observer.MoveNotification;
+import lombok.Getter;
+import lombok.Setter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Deque;
@@ -62,13 +66,14 @@ public class GameExecutor {
     /**
      * Tracks all state for a game.
      */
+    @Getter
+    @Setter
     public static class Tracker {
 
         GameState state;
         Board board;
         Player player[] = new Player[2];
         GameNotification notification;
-        Player.MoveNotification moveNotification;
 
         public Tracker() {
         }
@@ -78,15 +83,14 @@ public class GameExecutor {
             this.board = new Board(other.board);
             this.player = Arrays.copyOf(other.player, other.player.length);
             this.notification = other.notification;
-            this.moveNotification = other.moveNotification;
         }
 
         @Override
         public String toString() {
             return "Tracker{" +
                     "move=" + board.getNumPieces() +
-                    "state=" + state +
-                    ", board=" + board +
+                    ", state=" + state +
+                    ", board=\n" + board +
                     '}';
         }
 
@@ -109,46 +113,6 @@ public class GameExecutor {
                 default:
                     return null;
             }
-        }
-
-        public GameState getState() {
-            return state;
-        }
-
-        public void setState(GameState state) {
-            this.state = state;
-        }
-
-        public Board getBoard() {
-            return board;
-        }
-
-        public void setBoard(Board board) {
-            this.board = board;
-        }
-
-        public Player[] getPlayer() {
-            return player;
-        }
-
-        public void setPlayer(Player[] player) {
-            this.player = player;
-        }
-
-        public GameNotification getNotification() {
-            return notification;
-        }
-
-        public void setNotification(GameNotification notification) {
-            this.notification = notification;
-        }
-
-        public Player.MoveNotification getMoveNotification() {
-            return moveNotification;
-        }
-
-        public void setMoveNotification(Player.MoveNotification moveNotification) {
-            this.moveNotification = moveNotification;
         }
 
         /**
@@ -174,7 +138,6 @@ public class GameExecutor {
 
             this.player[index] = newPlayer;
         }
-
     }
     //endregion
 
@@ -252,7 +215,10 @@ public class GameExecutor {
                             .just(new Tracker(tracker))
                             .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
                             .flatMap(trkr -> nextTurn(trkr))
-                            .doOnNext(trkr -> Log.d(TAG, "game: " + trkr.toString()))
+                            .doOnNext(trkr -> Mono
+                                    .just(trkr)
+                                    .filter(trkr2 -> trkr2.getNotification() instanceof MoveNotification)
+                                    .doOnEach(trkr2 -> Log.d(TAG, "game: " + trkr2.toString())))
                             // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.
                             //       Would really like to avoid the Handler.
                             .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
@@ -326,12 +292,11 @@ public class GameExecutor {
                         case TURN_PLAYER_1: {
                             Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];
                             return me.makeMove(tracker.board)
-                                    // FIXME flatmap to Mono and avoid the generator?
-                                    .zipWith(Flux.generate(() -> 0,
-                                            (state, sink) -> {
-                                                sink.next(tracker);
-                                                return 0;
-                                            }));
+                                    .flatMap(notification -> {
+                                        Tracker copy = new Tracker(tracker);
+                                        copy.setNotification(notification);
+                                        return Flux.just(copy);
+                                    });
                         }
 
                         default:
@@ -339,23 +304,18 @@ public class GameExecutor {
                             return Flux.error(new IllegalStateException("game state"));
                     }
                 })
-                .map(t -> {
-                    Tracker tracker = new Tracker((Tracker) t.getT2());
-                    tracker.moveNotification = t.getT1();
-                    return tracker;
-                })
-                .doOnNext(tracker -> tracker.board.makeMove(tracker.moveNotification.getMove()))
-                .map(tracker -> {
-                    Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];
-                    if (tracker.board.hasValidMove(me.getColor().otherPlayer())) {
-                        tracker.state = tracker.state == GameState.TURN_PLAYER_0
-                                ? GameState.TURN_PLAYER_1 : GameState.TURN_PLAYER_0;
-                    } else if (!tracker.board.hasValidMove(me.getColor())) {
-                        tracker.state = GameState.GAME_OVER;
+                .doOnNext(tracker -> {
+                    if (tracker.getNotification() instanceof MoveNotification) {
+                        tracker.board.makeMove(((MoveNotification) tracker.getNotification()).getMove());
+
+                        Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];
+                        if (tracker.board.hasValidMove(me.getColor().otherPlayer())) {
+                            tracker.state = tracker.state == GameState.TURN_PLAYER_0
+                                    ? GameState.TURN_PLAYER_1 : GameState.TURN_PLAYER_0;
+                        } else if (!tracker.board.hasValidMove(me.getColor())) {
+                            tracker.state = GameState.GAME_OVER;
+                        }
                     }
-                    return tracker;
                 });
-
     }
-
 }

@@ -2,13 +2,53 @@ package ca.provenpath.othello;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import ca.provenpath.othello.game.BoardValue;
 
 import java.util.Optional;
 
 public class BoardCellView extends android.support.v7.widget.AppCompatImageView {
     public final static String TAG = BoardCellView.class.getName();
+
+    private class TextDrawable extends Drawable {
+
+        String text;
+
+        public TextDrawable(String text) {
+            this.text = text;
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+
+            Paint paint = new Paint();
+            paint.setARGB(255, 0, 128, 128);
+            canvas.drawText(text, 0.0f, 0.0f, paint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.OPAQUE;
+        }
+    }
 
     Optional<Integer> lastResId = Optional.empty();
 
@@ -70,8 +110,15 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
                 }
 
                 animator.start();
+                //Log.d(TAG, "Animator started");
             }
+
+            lastResId = Optional.of(resId);
         }
+    }
+
+    public void drawText(String text) {
+        setImageDrawable(new TextDrawable(text));
     }
 
     private int resourceForCell(BoardValue bv, BoardValue moveFilter) {

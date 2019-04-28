@@ -19,10 +19,7 @@
 
 package ca.provenpath.othello;
 
-import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.drawable.Drawable;
-import android.support.v4.content.res.ResourcesCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,11 +27,9 @@ import android.widget.Adapter;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
-
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
-
-import java.util.Optional;
+import reactor.util.function.Tuples;
 
 /**
  * Created by npapke on 2/22/15.
@@ -53,7 +48,7 @@ public class BoardAdapter extends BaseAdapter {
 
     @Override
     public Object getItem(int position) {
-        return mBoard.getLvalue(position);
+        return Tuples.of(mBoard.getLvalue(position), mValidMoveFilter);
     }
 
     @Override
@@ -63,7 +58,8 @@ public class BoardAdapter extends BaseAdapter {
 
     @Override
     public int getItemViewType(int position) {
-        return Adapter.IGNORE_ITEM_VIEW_TYPE;
+        // There is some weirdness with the first cell.  It doesn't render unless ...
+        return position == 0 ? Adapter.IGNORE_ITEM_VIEW_TYPE : 1;
     }
 
     @Override
@@ -78,6 +74,7 @@ public class BoardAdapter extends BaseAdapter {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
+
         BoardCellView imageView;
         if (convertView == null) {
             // if it's not recycled, initialize some attributes
@@ -99,6 +96,8 @@ public class BoardAdapter extends BaseAdapter {
         BoardValue bv = mBoard.getLvalue(position);
         imageView.draw(bv, mValidMoveFilter);
 
+        imageView.invalidate();
+
         return imageView;
     }
 
@@ -108,6 +107,10 @@ public class BoardAdapter extends BaseAdapter {
         mBoard = (newBoard == null) ? new Board() : (Board) newBoard.clone();
 
         notifyDataSetChanged();
+    }
+
+    public void draw(int linear, String valueOf) {
+        Log.d(TAG, String.format("%d = %s", linear, valueOf));
     }
 
     private Context mContext;

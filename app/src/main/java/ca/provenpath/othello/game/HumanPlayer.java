@@ -20,6 +20,8 @@
 package ca.provenpath.othello.game;
 
 import android.util.Log;
+import ca.provenpath.othello.game.observer.GameNotification;
+import ca.provenpath.othello.game.observer.MoveNotification;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -40,7 +42,7 @@ public class HumanPlayer extends Player {
     }
 
     @Override
-    public Flux<MoveNotification> makeMove(Board board) {
+    public Flux<GameNotification> makeMove(Board board) {
 
         return Flux
                 .<Optional<Integer>>create(sink -> {
@@ -58,7 +60,7 @@ public class HumanPlayer extends Player {
                     }
                     return Flux.empty();
                 })
-                .map(move -> new MoveNotification(true, move, board))
+                .<GameNotification>map(move -> new MoveNotification(move))
                 .doOnComplete(() -> moveSink = null);
 
     }
