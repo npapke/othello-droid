@@ -10,5 +10,5 @@ public class AnalysisNotification extends GameNotification {
 
     int value;
     Position position;
-    int moveRank;
+    boolean important;
 }

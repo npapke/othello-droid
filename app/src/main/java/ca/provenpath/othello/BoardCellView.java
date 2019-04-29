@@ -2,16 +2,14 @@ package ca.provenpath.othello;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.*;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LayerDrawable;
-import android.os.CpuUsageInfo;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import ca.provenpath.othello.game.BoardValue;
+import ca.provenpath.othello.game.observer.AnalysisNotification;
 
 import java.util.Optional;
 
@@ -23,20 +21,20 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
         Paint paint = new Paint();
         String text;
 
-        public TextDrawable(String text) {
+        public TextDrawable(String text, boolean isImportant) {
             paint.setARGB(255, 128, 128, 128);
             paint.setAntiAlias(true);
+            paint.setColor(isImportant ? Color.MAGENTA : Color.DKGRAY);
             this.text = text;
 
         }
 
         @Override
         public void draw(@NonNull Canvas canvas) {
-            Log.v(TAG, String.format("Drawing on canvas. w=%d, h%d", getBounds().width(), getBounds().height()));
+            //Log.v(TAG, String.format("Drawing on canvas. w=%d, h%d", getBounds().width(), getBounds().height()));
 
-            paint.setColor(Color.DKGRAY);
-            paint.setTextSize(50);
-            canvas.drawText(text, getBounds().width() * 0.1f, getBounds().height() * 0.3f, paint);
+            paint.setTextSize(45);
+            canvas.drawText(text, getBounds().width() * 0.1f, getBounds().height() * 0.4f, paint);
         }
 
         @Override
@@ -123,10 +121,11 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
         }
     }
 
-    public void drawText(String text) {
-        Log.v(TAG, "drawText: " + text);
+    public void drawText(AnalysisNotification notification) {
 
-        Drawable foreground = new TextDrawable(text);
+        Drawable foreground = new TextDrawable(
+                String.valueOf(notification.getValue()),
+                notification.isImportant());
         setForeground(foreground);
     }
 

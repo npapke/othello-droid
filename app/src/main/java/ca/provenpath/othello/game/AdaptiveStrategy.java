@@ -93,23 +93,19 @@ public class AdaptiveStrategy extends Strategy
         threats = scale( threats, 0, 16 );  // a large max is not realistic
 
         // Allow scores to go negative, i.e., [0,100] -> [-100,100]
-        int score = scale2( scoreMe - scoreOther, -numMoves, numMoves );
-        protectedScore = scale2( protectedScore, -numMoves * 5, numMoves * 5 );
+        int score = scale( scoreMe, 0, numMoves );
+        //protectedScore = scale( protectedScore, 0, numMoves * 8 );
 
         /*
          * The following is conjecture
          */
         if (numMoves < 16)
         {
-            finalScore = (freedom * 30) + (protectedScore * 40) + (score * 20) - (threats * 10);
-        }
-        else if (numMoves < 50)
-        {
-            finalScore = (freedom * 20) + (protectedScore * 40) + (score * 20) - (threats * 20);
+            finalScore = (freedom * 10) + (protectedScore * 40) + (score * 50) - (threats * 00);
         }
         else if (numMoves < 60)
         {
-            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 50) - (threats * 20);
+            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 70) - (threats * 00);
         }
         else if (numMoves < 64)
         {
@@ -120,7 +116,7 @@ public class AdaptiveStrategy extends Strategy
             finalScore = score * 100;
         }
 
-        return finalScore;
+        return finalScore / 10;
     }
 
     /**
@@ -134,7 +130,7 @@ public class AdaptiveStrategy extends Strategy
     {
         int clipped = Math.min( Math.max( value, min ), max );
 
-        return (clipped - min) * 100 / (max - min);
+        return (clipped - min) * 1000 / (max - min);
     }
 
     /**
@@ -159,6 +155,6 @@ public class AdaptiveStrategy extends Strategy
     private int calcProtectedScore( int count, int pos )
     {
         //return (count >= 3 ? (count - 2) * 2 : 0) + (Position.isEdge( pos ) ? 2 : 0);
-        return (count >= 3 ? (count - 2) * 2 : 0) + (Position.isEdge( pos ) ? 4 : 0);
+        return count + (Position.isEdge( pos ) ? 4 : 0);
     }
 }

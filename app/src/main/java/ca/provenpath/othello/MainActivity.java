@@ -237,9 +237,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         } else if (notification instanceof AnalysisNotification) {
-            mBoardAdaptor.draw(
-                    ((AnalysisNotification) notification).getPosition().getLinear(),
-                    String.valueOf(((AnalysisNotification) notification).getValue()));
+            mBoardAdaptor.draw((AnalysisNotification) notification);
         }
 
         findViewById(R.id.undo).setEnabled(

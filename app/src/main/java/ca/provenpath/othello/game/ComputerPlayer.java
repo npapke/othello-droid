@@ -100,7 +100,7 @@ public class ComputerPlayer extends Player {
                 })
                 .concatMap(notification -> {
 
-                    Flux<GameNotification> result = Flux.just((GameNotification)notification);
+                    Flux<GameNotification> result = Flux.just((GameNotification) notification);
 
                     return (notification instanceof MoveNotification)
                             ? result.delaySubscription(Duration.of(2, SECONDS))
@@ -161,11 +161,14 @@ public class ComputerPlayer extends Player {
 
                 results.add(new MiniMaxResult(result, candidate.getBestPosition()));
 
-                notificationSinkFn.accept(new AnalysisNotification(result, candidate.getBestPosition(), -1));
+                candidates.stream().forEach(r -> notificationSinkFn.accept(
+                        new AnalysisNotification(0, r.getBestPosition(), false)));
+                results.stream().forEach(r ->
+                        notificationSinkFn.accept(
+                                new AnalysisNotification(r.getValue(), r.getBestPosition(),
+                                        r.getValue() == results.peek().getValue())));
 
                 alpha = Math.max(result, alpha);
-                if (beta <= alpha)
-                    break;
 
                 if (isInterrupted)
                     break;

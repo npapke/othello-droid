@@ -29,6 +29,7 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
+import ca.provenpath.othello.game.observer.AnalysisNotification;
 import reactor.util.function.Tuples;
 
 /**
@@ -111,11 +112,12 @@ public class BoardAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
-    public void draw(int linear, String valueOf) {
-        Log.d(TAG, String.format("%d = %s", linear, valueOf));
+    public void draw(AnalysisNotification notification) {
+
+        int linear = notification.getPosition().getLinear();
 
         if( boardCellViews[linear] != null) {
-            boardCellViews[linear].drawText(valueOf);
+            boardCellViews[linear].drawText(notification);
         }
     }
 

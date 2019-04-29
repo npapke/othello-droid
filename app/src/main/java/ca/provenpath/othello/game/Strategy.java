@@ -36,6 +36,7 @@ public abstract class Strategy
     public final int determineFinalScore( BoardValue player, Board board )
     {
         int score = 0;
+        int otherScore = 0;
         BoardValue otherPlayer = player.otherPlayer();
 
         for (int pos = 0; Position.isValid( pos ); pos++)
@@ -48,13 +49,13 @@ public abstract class Strategy
             }
             else if (curCell == otherPlayer)
             {
-                score--;
+                ++otherScore;
             }
         }
 
         // Translate the value to ensure that terminal boards are more important
         // than non-terminal boards
-        return (score > 0) ? (100000 + score * 100) : (-100000 + score * 100);
+        return (score >= otherScore) ? (10000 + score)  : (-10000 - otherScore);
     }
 
 
