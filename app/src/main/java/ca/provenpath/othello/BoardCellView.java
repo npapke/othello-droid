@@ -32,7 +32,7 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
 
         @Override
         public void draw(@NonNull Canvas canvas) {
-            Log.d(TAG, String.format("Drawing on canvas. w=%d, h%d", getBounds().width(), getBounds().height()));
+            Log.v(TAG, String.format("Drawing on canvas. w=%d, h%d", getBounds().width(), getBounds().height()));
 
             paint.setColor(Color.DKGRAY);
             paint.setTextSize(50);
@@ -124,7 +124,7 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
     }
 
     public void drawText(String text) {
-        Log.d(TAG, "drawText: " + text);
+        Log.v(TAG, "drawText: " + text);
 
         Drawable foreground = new TextDrawable(text);
         setForeground(foreground);

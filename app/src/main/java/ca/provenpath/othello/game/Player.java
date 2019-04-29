@@ -20,8 +20,10 @@
 package ca.provenpath.othello.game;
 
 
+import android.util.Log;
 import ca.provenpath.othello.game.observer.GameNotification;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 /**
  * Abstraction for a player of the game.
@@ -29,6 +31,16 @@ import reactor.core.publisher.Flux;
  * @author npapke
  */
 public abstract class Player {
+    public final static String TAG = Player.class.getName();
+
+    private class Holder {
+        protected transient volatile FluxSink<Integer> moveSink;
+    }
+
+    private Holder holder = new Holder();
+    protected transient volatile boolean isInterrupted = false;
+
+
     public Player(BoardValue color) {
         this.color = color;
     }
@@ -42,6 +54,23 @@ public abstract class Player {
         return color.name();
     }
 
+    protected Flux<Integer> userMoves() {
+
+        final Holder h = holder;
+
+        return Flux
+                .<Integer>create(sink -> {
+                    Log.d(TAG, "Creating user move publisher");
+                    h.moveSink = sink;
+                })
+                .doOnNext(move->Log.d(TAG, "publish: Move to " + move))
+                .doOnComplete(() -> h.moveSink = null);
+    }
+
+    protected void endUserMoves() {
+        holder.moveSink.complete();
+    }
+
     /**
      * Gives the player the opportunity to perform a move on
      * the specified game board.
@@ -50,15 +79,23 @@ public abstract class Player {
      */
     public abstract Flux<GameNotification> makeMove(Board board);
 
-    /**
-     * Suggests a move to the player.
-     *
-     * @param lvalue linear position of move
-     * @return true iff player accepted the suggestion
-     */
-    public abstract boolean offerMove(int lvalue);
-
     public void interruptMove() {
+        Log.i(TAG, color + " interruptMove");
+        isInterrupted = true;
+        // Signal the end
+        if (holder.moveSink != null) {
+            holder.moveSink.complete();
+        }
+    }
+
+    public boolean offerMove(int lvalue) {
+        Log.d(TAG, color + " Move to " + lvalue);
+
+        if (holder.moveSink != null) {
+            holder.moveSink.next(lvalue);
+            return true;
+        }
+        return false;
     }
 
     //

@@ -31,7 +31,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
-import java.time.temporal.TemporalUnit;
 import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
@@ -100,7 +99,8 @@ public class ComputerPlayer extends Player {
 
                 })
                 .concatMap(notification -> {
-                    Flux<GameNotification> result = Flux.just((GameNotification) notification);
+
+                    Flux<GameNotification> result = Flux.just((GameNotification)notification);
 
                     return (notification instanceof MoveNotification)
                             ? result.delaySubscription(Duration.of(2, SECONDS))
@@ -108,17 +108,6 @@ public class ComputerPlayer extends Player {
                 });
 
         return move.subscribeOn(Schedulers.newSingle("engine"));
-    }
-
-    @Override
-    public boolean offerMove(int lvalue) {
-        return false;
-    }
-
-    @Override
-    public void interruptMove() {
-        Log.i(TAG, "interruptMove");
-        isInterrupted = true;
     }
 
 
@@ -172,7 +161,7 @@ public class ComputerPlayer extends Player {
 
                 results.add(new MiniMaxResult(result, candidate.getBestPosition()));
 
-                notificationSinkFn.accept(new AnalysisNotification(result, candidate.getBestPosition()));
+                notificationSinkFn.accept(new AnalysisNotification(result, candidate.getBestPosition(), -1));
 
                 alpha = Math.max(result, alpha);
                 if (beta <= alpha)
@@ -453,5 +442,4 @@ public class ComputerPlayer extends Player {
         this.strategy = strategy;
     }
 
-    private transient volatile boolean isInterrupted = false;
 }

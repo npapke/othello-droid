@@ -37,6 +37,7 @@ import ca.provenpath.othello.game.observer.AnalysisNotification;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 public class MainActivity extends AppCompatActivity {
@@ -262,11 +263,8 @@ public class MainActivity extends AppCompatActivity {
     private void attemptMove(int position) {
         Optional<GameExecutor.Tracker> oTracker = GameExecutor.instance().getGameState();
         if (oTracker.isPresent()) {
-            GameExecutor.Tracker tracker = oTracker.get();
-            Player human = tracker.getNextPlayer();
-            if ((human != null) && !human.isComputer()) {
-                human.offerMove(position);
-            }
+            Arrays.stream(oTracker.get().getPlayer())
+                    .forEach(player->player.offerMove(position));
         }
     }
 

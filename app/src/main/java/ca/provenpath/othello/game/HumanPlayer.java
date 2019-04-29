@@ -44,45 +44,16 @@ public class HumanPlayer extends Player {
     @Override
     public Flux<GameNotification> makeMove(Board board) {
 
-        return Flux
-                .<Optional<Integer>>create(sink -> {
-                    moveSink = sink;
-                })
+        return userMoves()
                 .flatMap(move -> {
-                    if (move.isPresent()) {
-                        if (board.isValidMove(getColor(), move.get())) {
-                            moveSink.complete();
-                            return Flux.just(new Move(getColor(), new Position(move.get())));
+                            if (board.isValidMove(getColor(), move)) {
+                                endUserMoves();
+                                return Flux.just(new Move(getColor(), new Position(move)));
+                            }
+                            return Flux.empty();
                         }
-                    } else {
-                        // interrupted move
-                        moveSink.complete();
-                    }
-                    return Flux.empty();
-                })
-                .<GameNotification>map(move -> new MoveNotification(move))
-                .doOnComplete(() -> moveSink = null);
-
+                )
+                .<GameNotification>map(MoveNotification::new);
     }
 
-    @Override
-    public void interruptMove() {
-        Log.i(TAG, "interruptMove");
-        // Signal the end
-        if (moveSink != null) {
-            moveSink.next(Optional.empty());
-        }
-    }
-
-    public boolean offerMove(int lvalue) {
-        Log.d(TAG, "Move to " + lvalue);
-
-        if (moveSink != null) {
-            moveSink.next(Optional.of(lvalue));
-            return true;
-        }
-        return false;
-    }
-
-    private transient volatile FluxSink<Optional<Integer>> moveSink;
 }
