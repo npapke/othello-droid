@@ -20,13 +20,17 @@
 package ca.provenpath.othello.game;
 
 
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import ca.provenpath.othello.PlayerSettingsFragment;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -35,6 +39,7 @@ import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 /**
@@ -44,11 +49,33 @@ import static java.time.temporal.ChronoUnit.SECONDS;
  *
  * @author npapke
  */
+@Getter
+@Setter
 public class ComputerPlayer extends Player {
     public final static String TAG = ComputerPlayer.class.getSimpleName();
 
+    int maxDepth = 4;
+    Strategy strategy = new AdaptiveStrategy();
+    boolean showOverlay = false;
+    Duration minTurnTime = Duration.ZERO;
+    Duration delayAfterTurnTime = Duration.of(2, SECONDS);
+
+
     public ComputerPlayer(BoardValue color) {
         super(color);
+    }
+
+    public ComputerPlayer(BoardValue color, SharedPreferences prefs) {
+        this(color);
+
+        setMaxDepth(prefs.getInt(PlayerSettingsFragment.KEY_LOOKAHEAD, 4));
+        setStrategy(StrategyFactory.getObject(prefs.getString(PlayerSettingsFragment.KEY_STRATEGY, "")));
+        setMinTurnTime(Duration.of(
+                prefs.getInt(PlayerSettingsFragment.KEY_MIN_TIME_MS, 0),
+                MILLIS));
+        setDelayAfterTurnTime(Duration.of(
+                prefs.getInt(PlayerSettingsFragment.KEY_DELAY_TIME_MS, 2000),
+                MILLIS));
     }
 
     public ComputerPlayer(String serial) {
@@ -108,7 +135,6 @@ public class ComputerPlayer extends Player {
                             ? result.delaySubscription(Duration.of(2, SECONDS))
                             : result;
                 });
-
     }
 
 
@@ -165,8 +191,6 @@ public class ComputerPlayer extends Player {
 
                 results.add(new MiniMaxResult(result, candidate.getBestPosition()));
 
-                //candidates.stream().forEach(r -> notificationSinkFn.accept(
-                //        new AnalysisNotification(0, r.getBestPosition(), false)));
                 results.stream().forEach(r ->
                         notificationSinkFn.accept(
                                 new AnalysisNotification(r.getValue(), r.getBestPosition(),
@@ -391,54 +415,4 @@ public class ComputerPlayer extends Player {
             return System.currentTimeMillis() - start;
         }
     }
-
-
-    //
-    // ---------------- Bean Pattern ---------------
-    //
-    protected int maxDepth = 4;
-
-
-    /**
-     * Get the value of maxDepth
-     *
-     * @return the value of maxDepth
-     */
-    public int getMaxDepth() {
-        return maxDepth;
-    }
-
-
-    /**
-     * Set the value of maxDepth
-     *
-     * @param maxDepth new value of maxDepth
-     */
-    public void setMaxDepth(int maxDepth) {
-        this.maxDepth = maxDepth;
-    }
-
-
-    protected Strategy strategy = new AdaptiveStrategy();
-
-
-    /**
-     * Get the value of strategy
-     *
-     * @return the value of strategy
-     */
-    public Strategy getStrategy() {
-        return strategy;
-    }
-
-
-    /**
-     * Set the value of strategy
-     *
-     * @param strategy new value of strategy
-     */
-    public void setStrategy(Strategy strategy) {
-        this.strategy = strategy;
-    }
-
 }

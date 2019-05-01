@@ -23,9 +23,13 @@
     <string name="help_url">https://en.wikipedia.org/wiki/Reversi</string>
     <string name="action_exit">Exit</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="white">White</string>
     <string name="black">Black</string>
+    <string name="pref_isoverlay_analysis_summ">Show analysis overlay</string>
+    <string name="pref_isoverlay_analysis">Overlay</string>
+    <string name="pref_min_time">Turns take at least this long in seconds</string>
+    <string name="pref_min_time_default">0</string>
+    <string name="pref_delay_time">Delay after move in seconds</string>
+    <string name="pref_delay_time_default">0</string>
 
 </resources>

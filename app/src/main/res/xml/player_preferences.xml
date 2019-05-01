@@ -2,25 +2,47 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:key="pref_category">
         <CheckBoxPreference
-            android:defaultValue="true"
-            android:key="pref_iscomputer"
-            android:summary="@string/pref_iscomputer_summ"
-            android:title="@string/pref_iscomputer"/>
+                android:defaultValue="true"
+                android:key="pref_iscomputer"
+                android:summary="@string/pref_iscomputer_summ"
+                android:title="@string/pref_iscomputer"/>
         <ListPreference
-            android:defaultValue="@string/pref_lookaheads_default"
-            android:dependency="pref_iscomputer"
-            android:dialogTitle="@string/pref_lookahead"
-            android:entries="@array/pref_lookaheads_entries"
-            android:entryValues="@array/pref_lookaheads_values"
-            android:key="pref_lookahead"
-            android:title="@string/pref_lookahead"/>
+                android:defaultValue="@string/pref_lookaheads_default"
+                android:dependency="pref_iscomputer"
+                android:dialogTitle="@string/pref_lookahead"
+                android:entries="@array/pref_lookaheads_entries"
+                android:entryValues="@array/pref_lookaheads_values"
+                android:key="pref_lookahead"
+                android:title="@string/pref_lookahead"/>
         <ListPreference
-            android:dependency="pref_iscomputer"
-            android:defaultValue="@string/pref_strategys_default"
-            android:dialogTitle="@string/pref_strategy"
-            android:entries="@array/pref_strategys_entries"
-            android:entryValues="@array/pref_strategys_values"
-            android:key="pref_strategy"
-            android:title="@string/pref_strategy"/>
+                android:dependency="pref_iscomputer"
+                android:defaultValue="@string/pref_strategys_default"
+                android:dialogTitle="@string/pref_strategy"
+                android:entries="@array/pref_strategys_entries"
+                android:entryValues="@array/pref_strategys_values"
+                android:key="pref_strategy"
+                android:title="@string/pref_strategy"/>
+        <CheckBoxPreference
+                android:dependency="pref_iscomputer"
+                android:defaultValue="false"
+                android:key="@string/pref_isoverlay_analysis"
+                android:summary="@string/pref_isoverlay_analysis_summ"
+                android:title="@string/pref_isoverlay_analysis"/>
+        <ListPreference
+                android:dependency="pref_iscomputer"
+                android:defaultValue="@string/pref_min_time_default"
+                android:dialogTitle="@string/pref_min_time"
+                android:entries="@array/pref_min_time_entries"
+                android:entryValues="@array/pref_min_time_values"
+                android:key="pref_min_time"
+                android:title="@string/pref_min_time"/>
+        <ListPreference
+                android:dependency="pref_iscomputer"
+                android:defaultValue="@string/pref_delay_time_default"
+                android:dialogTitle="@string/pref_delay_time"
+                android:entries="@array/pref_delay_time_entries"
+                android:entryValues="@array/pref_delay_time_values"
+                android:key="pref_delay_time"
+                android:title="@string/pref_delay_time"/>
     </PreferenceCategory>
 </PreferenceScreen>
