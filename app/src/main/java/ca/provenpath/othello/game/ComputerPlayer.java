@@ -68,7 +68,7 @@ public class ComputerPlayer extends Player {
     @Override
     public Flux<GameNotification> makeMove(Board board) {
 
-        Flux<GameNotification> move = Flux
+        return Flux
                 .create(sink -> {
 
                     Assert.notNull(color);
@@ -81,7 +81,7 @@ public class ComputerPlayer extends Player {
                     Stats stats = new Stats();
                     MiniMaxResult result = minimaxAB(board, color, maxDepth, stats,
                             notification -> {
-                                Log.d(TAG, "to sink: " + notification);
+                                //Log.d(TAG, "to sink: " + notification);
                                 sink.next(notification);
                             });
 
@@ -98,7 +98,9 @@ public class ComputerPlayer extends Player {
                     sink.complete();
 
                 })
-                .concatMap(notification -> {
+                .subscribeOn(Schedulers.newParallel("engine"), false)
+                .publishOn(Schedulers.newSingle("delivery"))
+                .flatMap(notification -> {
 
                     Flux<GameNotification> result = Flux.just((GameNotification) notification);
 
@@ -107,7 +109,6 @@ public class ComputerPlayer extends Player {
                             : result;
                 });
 
-        return move.subscribeOn(Schedulers.newSingle("engine"));
     }
 
 
@@ -157,12 +158,15 @@ public class ComputerPlayer extends Player {
                 Board copyOfBoard = (Board) board.clone();
                 copyOfBoard.makeMove(player, candidate.getBestPosition().getLinear());
 
+                notificationSinkFn.accept(
+                        new AnalysisNotification(0, candidate.getBestPosition(), false));
+
                 int result = minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
 
                 results.add(new MiniMaxResult(result, candidate.getBestPosition()));
 
-                candidates.stream().forEach(r -> notificationSinkFn.accept(
-                        new AnalysisNotification(0, r.getBestPosition(), false)));
+                //candidates.stream().forEach(r -> notificationSinkFn.accept(
+                //        new AnalysisNotification(0, r.getBestPosition(), false)));
                 results.stream().forEach(r ->
                         notificationSinkFn.accept(
                                 new AnalysisNotification(r.getValue(), r.getBestPosition(),
@@ -271,11 +275,7 @@ public class ComputerPlayer extends Player {
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove(player, pos);
 
-                    int result = minimaxAB(copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats);
-                    if (result > value) {
-                        value = result;
-                    }
-
+                    value = minimaxAB(copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats);
                     alpha = Math.max(value, alpha);
                     if (beta <= alpha)
                         break;
@@ -294,11 +294,7 @@ public class ComputerPlayer extends Player {
                     Board copyOfBoard = (Board) board.clone();
                     copyOfBoard.makeMove(player, pos);
 
-                    int result = minimaxAB(copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats);
-                    if (result < value) {
-                        value = result;
-                    }
-
+                    value = minimaxAB(copyOfBoard, player.otherPlayer(), depth - 1, alpha, beta, stats);
                     beta = Math.min(value, beta);
                     if (beta <= alpha)
                         break;

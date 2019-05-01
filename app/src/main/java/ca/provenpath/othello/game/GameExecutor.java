@@ -171,6 +171,7 @@ public class GameExecutor {
     }
 
     private void endGame() {
+        Log.i(TAG, "endGame");
         if (gameThread != null) {
             stopGameThread = true;
 
