@@ -35,8 +35,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Delayed;
 import java.util.function.Consumer;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
@@ -68,14 +71,18 @@ public class ComputerPlayer extends Player {
     public ComputerPlayer(BoardValue color, SharedPreferences prefs) {
         this(color);
 
-        setMaxDepth(prefs.getInt(PlayerSettingsFragment.KEY_LOOKAHEAD, 4));
+        setMaxDepth(
+                Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_LOOKAHEAD, "6")));
         setStrategy(StrategyFactory.getObject(prefs.getString(PlayerSettingsFragment.KEY_STRATEGY, "")));
+
         setMinTurnTime(Duration.of(
-                prefs.getInt(PlayerSettingsFragment.KEY_MIN_TIME_MS, 0),
+                Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_MIN_TIME_MS, "0")),
                 MILLIS));
         setDelayAfterTurnTime(Duration.of(
-                prefs.getInt(PlayerSettingsFragment.KEY_DELAY_TIME_MS, 2000),
+                Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_DELAY_TIME_MS, "2000")),
                 MILLIS));
+
+        setShowOverlay(prefs.getBoolean(PlayerSettingsFragment.KEY_ISOVERLAY_ANALYSIS, false));
     }
 
     public ComputerPlayer(String serial) {
@@ -105,6 +112,8 @@ public class ComputerPlayer extends Player {
 
                     isInterrupted = false;
 
+                    Instant startProcessing = Instant.now();
+
                     Stats stats = new Stats();
                     MiniMaxResult result = minimaxAB(board, color, maxDepth, stats,
                             notification -> {
@@ -121,19 +130,26 @@ public class ComputerPlayer extends Player {
                             duration,
                             duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999));
 
-                    sink.next(new MoveNotification(new Move(color, result.getBestPosition())));
+                    sink.next(new MoveNotification(new Move(color, result.getBestPosition()), startProcessing));
                     sink.complete();
 
                 })
                 .subscribeOn(Schedulers.newParallel("engine"), false)
                 .publishOn(Schedulers.newSingle("delivery"))
+                .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisNotification))
                 .flatMap(notification -> {
 
-                    Flux<GameNotification> result = Flux.just((GameNotification) notification);
+                    Duration delay = Duration.ZERO;
 
-                    return (notification instanceof MoveNotification)
-                            ? result.delaySubscription(Duration.of(2, SECONDS))
-                            : result;
+                    if (notification instanceof MoveNotification) {
+
+                        delay = getMinTurnTime()
+                                .minus(Duration.between(((MoveNotification) notification).getGameStart(), Instant.now()));
+                        delay = delay.isNegative() ? Duration.ZERO : delay;
+                        delay = delay.plus(getDelayAfterTurnTime());
+                    }
+
+                    return Flux.just((GameNotification) notification).delaySubscription(delay);
                 });
     }
 

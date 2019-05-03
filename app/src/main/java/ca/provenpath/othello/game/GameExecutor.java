@@ -248,38 +248,24 @@ public class GameExecutor {
         msg.sendToTarget();
     }
 
-    private boolean applyPreferences(Function<BoardValue, SharedPreferences> prefs, Tracker tracker) {
-        boolean rv0 = applyPreferences(prefs, tracker, BoardValue.BLACK, 0);
-        boolean rv1 = applyPreferences(prefs, tracker, BoardValue.WHITE, 1);
-
-        return rv0 || rv1;
+    private void applyPreferences(Function<BoardValue, SharedPreferences> prefs, Tracker tracker) {
+        applyPreferences(prefs, tracker, BoardValue.BLACK, 0);
+        applyPreferences(prefs, tracker, BoardValue.WHITE, 1);
     }
 
-    private boolean applyPreferences(Function<BoardValue, SharedPreferences> prefsFn, GameExecutor.Tracker tracker, BoardValue color, int index) {
+    private void applyPreferences(Function<BoardValue, SharedPreferences> prefsFn, GameExecutor.Tracker tracker, BoardValue color, int index) {
         try {
             SharedPreferences prefs = prefsFn.apply(color);
 
-            Player oldPlayer = tracker.getPlayer(index);
-
             if (prefs.getBoolean(PlayerSettingsFragment.KEY_ISCOMPUTER, false)) {
-                ComputerPlayer cplayer = new ComputerPlayer(color);
-
-                cplayer.setMaxDepth(Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_LOOKAHEAD, "4")));
-                cplayer.setStrategy(StrategyFactory.getObject(prefs.getString(PlayerSettingsFragment.KEY_STRATEGY, "")));
-
+                ComputerPlayer cplayer = new ComputerPlayer(color, prefs);
                 tracker.setPlayer(index, cplayer);
-
-                return (oldPlayer == null) || !oldPlayer.isComputer();
             } else {
                 tracker.setPlayer(index, new HumanPlayer(color));
-
-                return (oldPlayer == null) || oldPlayer.isComputer();
             }
         } catch (Exception e) {
             Log.w(TAG, "Cannot apply preferences", e);
         }
-
-        return false;
     }
 
     private Flux<Tracker> nextTurn(Tracker inTracker) {

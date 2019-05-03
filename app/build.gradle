@@ -46,6 +46,7 @@ dependencies {
     implementation files('libs/gson-2.3.1.jar')
     implementation 'io.projectreactor:reactor-core'
     testImplementation 'junit:junit:4.12'
+    // Need both of the below.  One to compile, the other for the ide.  The compile one generates warnings.
     compileOnly 'org.projectlombok:lombok:1.18.6'
     annotationProcessor 'org.projectlombok:lombok:1.18.6'
 }

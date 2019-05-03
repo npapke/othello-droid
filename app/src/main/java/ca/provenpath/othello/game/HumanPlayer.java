@@ -25,6 +25,7 @@ import ca.provenpath.othello.game.observer.MoveNotification;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -53,7 +54,7 @@ public class HumanPlayer extends Player {
                             return Flux.empty();
                         }
                 )
-                .<GameNotification>map(MoveNotification::new);
+                .<GameNotification>map(move -> new MoveNotification(move, Instant.now()));
     }
 
 }
