@@ -55,7 +55,7 @@ public abstract class Strategy
 
         // Translate the value to ensure that terminal boards are more important
         // than non-terminal boards
-        return (score >= otherScore) ? (10000 + score)  : (-10000 - otherScore);
+        return (score >= otherScore) ? (10000 + score)  : (-10000 + score);
     }
 
 

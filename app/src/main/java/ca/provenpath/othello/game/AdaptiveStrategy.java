@@ -61,7 +61,6 @@ public class AdaptiveStrategy extends Strategy {
         }
 
         // A guaranteed win/loss
-        // TBD does this generalize?
         if (scoreMe == 0) {
             return Integer.MIN_VALUE;
         } else if (scoreOther == 0) {

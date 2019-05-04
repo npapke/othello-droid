@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
 import ca.provenpath.othello.game.GameExecutor;
 import ca.provenpath.othello.game.Player;
@@ -76,7 +77,7 @@ public class GameStatusFragment extends Fragment {
 
             drawText(R.id.status_black_score, Integer.toString(blackScore));
             drawText(R.id.status_white_score, Integer.toString(whiteScore));
-            drawText(R.id.status_remaining, Integer.toString(64 - (blackScore + whiteScore)));
+            drawText(R.id.status_remaining, Integer.toString(Board.BOARD_LSIZE - (blackScore + whiteScore)));
 
 
             switch (tracker.getState()) {

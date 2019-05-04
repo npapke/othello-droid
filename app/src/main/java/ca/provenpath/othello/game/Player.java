@@ -64,7 +64,7 @@ public abstract class Player {
                     h.moveSink = sink;
                 })
                 .doOnNext(move->Log.d(TAG, "publish: Move to " + move))
-                .doOnComplete(() -> h.moveSink = null);
+                .doOnComplete(() -> { h.moveSink = null; Log.d(TAG,"Destroyed sink");});
     }
 
     protected void endUserMoves() {

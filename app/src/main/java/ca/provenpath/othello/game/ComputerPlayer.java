@@ -131,6 +131,10 @@ public class ComputerPlayer extends Player {
                             duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999));
 
                     sink.next(new MoveNotification(new Move(color, result.getBestPosition()), startProcessing));
+                    try {
+                        Thread.sleep(getDelayAfterTurnTime().toMillis());
+                    } catch (InterruptedException e) {
+                    }
                     sink.complete();
 
                 })
@@ -142,11 +146,11 @@ public class ComputerPlayer extends Player {
                     Duration delay = Duration.ZERO;
 
                     if (notification instanceof MoveNotification) {
-
+                        // Making the move.  Shall we delay to give
                         delay = getMinTurnTime()
                                 .minus(Duration.between(((MoveNotification) notification).getGameStart(), Instant.now()));
                         delay = delay.isNegative() ? Duration.ZERO : delay;
-                        delay = delay.plus(getDelayAfterTurnTime());
+                        //delay = delay.plus(getDelayAfterTurnTime());
                     }
 
                     return Flux.just((GameNotification) notification).delaySubscription(delay);
@@ -203,7 +207,9 @@ public class ComputerPlayer extends Player {
                 notificationSinkFn.accept(
                         new AnalysisNotification(0, candidate.getBestPosition(), false));
 
-                int result = minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
+                int result = (candidates.size() == 1)
+                        ? 0  // Optimization.  There is only one move.
+                        : minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
 
                 results.add(new MiniMaxResult(result, candidate.getBestPosition()));
 

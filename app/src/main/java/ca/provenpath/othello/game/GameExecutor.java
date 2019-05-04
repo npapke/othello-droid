@@ -20,6 +20,7 @@
 package ca.provenpath.othello.game;
 
 import android.content.SharedPreferences;
+import android.graphics.Path;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -144,6 +145,7 @@ public class GameExecutor {
     private Thread gameThread;
     private volatile boolean stopGameThread;
     private Deque<Tracker> history = new ConcurrentLinkedDeque<>();
+    private Tracker currentState;
 
     public void finalize() {
         endGame();
@@ -162,9 +164,6 @@ public class GameExecutor {
 
         endGame();
 
-        // TODO this limits us to one undo level
-        history.clear();
-
         gameThread = new Thread(() -> runOneGame(uiThreadHandler, prefs, tracker));
         gameThread.setName("game");
         gameThread.start();
@@ -175,11 +174,11 @@ public class GameExecutor {
         if (gameThread != null) {
             stopGameThread = true;
 
-            history
-                    .stream()
-                    .limit(1)
-                    .forEach(tracker -> Arrays.stream(tracker.getPlayer())
-                            .forEach(player -> player.interruptMove()));
+            if (currentState != null) {
+                Arrays.stream(currentState.getPlayer())
+                        .forEach(player -> player.interruptMove());
+            }
+
             try {
                 gameThread.join(5000);
             } catch (InterruptedException e) {
@@ -188,12 +187,16 @@ public class GameExecutor {
         }
     }
 
-    public Optional<Tracker> getGameState() {
-        return history.stream().findFirst();
+    public synchronized Optional<Tracker> getGameState() {
+        return Optional.ofNullable(currentState);
     }
 
-    public Optional<Tracker> getUndoGameState() {
-        return history.stream().skip(1).limit(1).findFirst();
+    public synchronized Optional<Tracker> popUndoGameState() {
+        return Optional.ofNullable(history.isEmpty() ? null : history.pop());
+    }
+
+    public synchronized Optional<Tracker> peekUndoGameState() {
+        return history.stream().findFirst();
     }
 
     private void runOneGame(
@@ -201,36 +204,42 @@ public class GameExecutor {
             Function<BoardValue, SharedPreferences> prefs,
             Optional<Tracker> inTracker) {
 
-        Tracker tracker = inTracker.orElse(newGame());
+        if (!inTracker.isPresent()) {
+            inTracker = Optional.of(newGame());  // beware side effects
+        }
+
+        Tracker tracker = inTracker.get();
 
         while (tracker.getState() != GameState.GAME_OVER && !stopGameThread) {
             applyPreferences(prefs, tracker);
 
-            if (!tracker.getNextPlayer().isComputer()) {
-                history.push(tracker);
-                Log.i(TAG, "push: " + tracker.toString());
-            }
+            currentState = tracker;
 
             tracker = Optional.ofNullable(
                     Flux
                             .just(new Tracker(tracker))
                             .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
                             .flatMap(trkr -> nextTurn(trkr))
-                            .doOnNext(trkr -> Mono
-                                    .just(trkr)
-                                    .filter(trkr2 -> trkr2.getNotification() instanceof MoveNotification)
-                                    .doOnEach(trkr2 -> Log.d(TAG, "game: " + trkr2.toString())))
+                            .doOnNext(trkr -> {
+                                if (trkr.getNotification() instanceof MoveNotification) {
+                                    Log.d(TAG, "game: " + trkr.toString());
+                                }
+                            })
                             // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.
                             //       Would really like to avoid the Handler.
                             .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
                             .doOnError(error -> sendRedrawRequest(uiThreadHandler, null)) // FIXME
                             .blockLast())
                     .orElse(tracker); // keep old state on error
+
         }
     }
 
     private Tracker newGame() {
         Log.i(TAG, "newGame");
+
+        // Beware the side effects
+        history.clear();
 
         Tracker tracker = new Tracker();
         tracker.state = GameState.TURN_PLAYER_0;
@@ -253,7 +262,8 @@ public class GameExecutor {
         applyPreferences(prefs, tracker, BoardValue.WHITE, 1);
     }
 
-    private void applyPreferences(Function<BoardValue, SharedPreferences> prefsFn, GameExecutor.Tracker tracker, BoardValue color, int index) {
+    private void applyPreferences(Function<BoardValue, SharedPreferences> prefsFn, GameExecutor.Tracker
+            tracker, BoardValue color, int index) {
         try {
             SharedPreferences prefs = prefsFn.apply(color);
 
@@ -293,6 +303,10 @@ public class GameExecutor {
                 })
                 .doOnNext(tracker -> {
                     if (tracker.getNotification() instanceof MoveNotification) {
+                        if (!tracker.getNextPlayer().isComputer()) {
+                            // this move is undo-able
+                            history.push(new Tracker(tracker));
+                        }
                         tracker.board.makeMove(((MoveNotification) tracker.getNotification()).getMove());
 
                         Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];

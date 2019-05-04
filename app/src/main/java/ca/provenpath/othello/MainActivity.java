@@ -216,7 +216,9 @@ public class MainActivity extends AppCompatActivity {
      * Restores an earlier game state, if possible.
      */
     private void undoGame() {
-        GameExecutor.instance().getUndoGameState().flatMap(tracker -> runGame(Optional.of(tracker)));
+        GameExecutor.instance()
+                .popUndoGameState()
+                .flatMap(tracker -> runGame(Optional.of(tracker)));
     }
 
     private void updateDisplay(GameExecutor.Tracker tracker) {
@@ -241,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         findViewById(R.id.undo).setEnabled(
-                GameExecutor.instance().getUndoGameState().isPresent());
+                GameExecutor.instance().peekUndoGameState().isPresent());
     }
 
     private void showValidMoves(GameExecutor.Tracker tracker) {
@@ -259,10 +261,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void attemptMove(int position) {
+        Log.d(TAG, "Attempt move to " + position);
         Optional<GameExecutor.Tracker> oTracker = GameExecutor.instance().getGameState();
         if (oTracker.isPresent()) {
             Arrays.stream(oTracker.get().getPlayer())
-                    .forEach(player->player.offerMove(position));
+                    .forEach(player -> player.offerMove(position));
         }
     }
 

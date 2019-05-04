@@ -20,7 +20,6 @@
 package ca.provenpath.othello;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
@@ -96,8 +95,6 @@ public class BoardAdapter extends BaseAdapter {
 
         BoardValue bv = mBoard.getLvalue(position);
         imageView.draw(bv, mValidMoveFilter);
-
-        imageView.invalidate();
 
         boardCellViews[position] = imageView;
 

@@ -7,7 +7,6 @@ import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import ca.provenpath.othello.game.BoardValue;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
 
@@ -33,7 +32,7 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
         public void draw(@NonNull Canvas canvas) {
             //Log.v(TAG, String.format("Drawing on canvas. w=%d, h%d", getBounds().width(), getBounds().height()));
 
-            paint.setTextSize(45);
+            paint.setTextSize(text.length() > 4 ? 35 : 45);  // TODO what's the right way??
             canvas.drawText(text, getBounds().width() * 0.1f, getBounds().height() * 0.4f, paint);
         }
 
