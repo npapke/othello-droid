@@ -135,4 +135,9 @@ public class AdaptiveStrategy extends Strategy {
         //return (count >= 3 ? (count - 2) * 2 : 0) + (Position.isEdge( pos ) ? 2 : 0);
         return Math.max(0,count -2) * 4 + (Position.isEdge(pos) ? 4 : 0);
     }
+
+    @Override
+    public String toString() {
+        return "AdaptiveStrategy";
+    }
 }

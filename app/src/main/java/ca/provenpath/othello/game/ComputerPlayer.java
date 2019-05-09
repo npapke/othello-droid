@@ -25,6 +25,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import ca.provenpath.othello.PlayerSettingsFragment;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
+import ca.provenpath.othello.game.observer.EngineNotification;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
 import lombok.AllArgsConstructor;
@@ -188,6 +189,9 @@ public class ComputerPlayer extends Player {
             }
         }
 
+        notificationSinkFn.accept(
+                new EngineNotification(stats.boardsEvaluated, stats.duration()));
+
         /*
          * Build game tree of increasing depths.  Use results of one iteration to
          * hint better candidates to the subsequent iteration.  alpha-beta pruning
@@ -217,6 +221,9 @@ public class ComputerPlayer extends Player {
                         notificationSinkFn.accept(
                                 new AnalysisNotification(r.getValue(), r.getBestPosition(),
                                         r.getValue() == results.peek().getValue())));
+
+                notificationSinkFn.accept(
+                        new EngineNotification(stats.boardsEvaluated, stats.duration()));
 
                 alpha = Math.max(result, alpha);
 

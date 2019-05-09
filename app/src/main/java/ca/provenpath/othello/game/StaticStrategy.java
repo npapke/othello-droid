@@ -29,8 +29,7 @@ package ca.provenpath.othello.game;
  *
  * @author npapke
  */
-public class StaticStrategy extends Strategy
-{
+public class StaticStrategy extends Strategy {
     // These values where generated using my "coth" Othello implementation
     static int weight[] =
             {
@@ -45,27 +44,24 @@ public class StaticStrategy extends Strategy
             };
 
 
-    /** Assign a numeric value to the board utilizing a weighted cell matrix.
+    /**
+     * Assign a numeric value to the board utilizing a weighted cell matrix.
+     *
      * @param player the perspective of the player to evaluate the board from
-     * @param board the board to evaluate
+     * @param board  the board to evaluate
      * @return the value of the board
      */
     @Override
-    public int determineBoardValue( BoardValue player, Board board )
-    {
+    public int determineBoardValue(BoardValue player, Board board) {
         int score = 0;
         BoardValue otherPlayer = player.otherPlayer();
 
-        for (Position pos : board)
-        {
-            BoardValue curCell = board.getValue( pos );
+        for (Position pos : board) {
+            BoardValue curCell = board.getValue(pos);
 
-            if (curCell == player)
-            {
+            if (curCell == player) {
                 score = score + weight[pos.getLinear()];
-            }
-            else if (curCell == otherPlayer)
-            {
+            } else if (curCell == otherPlayer) {
                 score = score - weight[pos.getLinear()];
             }
         }
@@ -73,5 +69,8 @@ public class StaticStrategy extends Strategy
         return score;
     }
 
-
+    @Override
+    public String toString() {
+        return "StaticStrategy";
+    }
 }

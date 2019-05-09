@@ -34,6 +34,7 @@ import android.view.MenuItem;
 import android.widget.GridView;
 import ca.provenpath.othello.game.*;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
+import ca.provenpath.othello.game.observer.EngineNotification;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
 
@@ -268,6 +269,15 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (notification instanceof AnalysisNotification) {
             mBoardAdaptor.draw((AnalysisNotification) notification);
+        } else if (notification instanceof EngineNotification) {
+
+            StatisticsFragment statisticsFragment =
+                    (StatisticsFragment) getSupportFragmentManager().findFragmentById(R.id.statistics_fragment);
+
+            if (statisticsFragment != null) {
+                statisticsFragment.update(tracker);
+            }
+
         }
 
         findViewById(R.id.undo).setEnabled(

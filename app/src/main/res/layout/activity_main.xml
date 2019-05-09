@@ -55,5 +55,11 @@
 
     </RelativeLayout>
 
+    <fragment
+            android:id="@+id/statistics_fragment"
+            android:name="ca.provenpath.othello.StatisticsFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
 </LinearLayout>
 
