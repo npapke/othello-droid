@@ -74,7 +74,7 @@ public class GameExecutor {
         GameState state;
         Board board;
         Player player[] = new Player[2];
-        GameNotification notification;
+        transient GameNotification notification;
 
         public Tracker() {
         }

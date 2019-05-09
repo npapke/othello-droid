@@ -57,13 +57,11 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
-
-        Optional<GameExecutor.Tracker> tracker = Optional.empty();
         if (savedInstanceState != null) {
-            tracker = Optional.ofNullable(
-                    GameExecutorSerializer.deserialize(savedInstanceState.getString(KEY_EXECUTOR)));
+            onRestoreInstanceState(savedInstanceState);
         }
+
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         setContentView(R.layout.activity_main);
         setSupportActionBar(findViewById(R.id.toolbar));
@@ -101,18 +99,42 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 };
-
-        // Do this after everything is initialized
-        runGame(tracker);
     }
 
     @Override
     protected void onDestroy() {
         Log.i(TAG, "onDestroy");
 
-        GameExecutor.instance().finalize();
-
         super.onDestroy();
+    }
+
+    @Override
+    protected void onStart() {
+        Log.i(TAG, "onStart");
+        super.onStart();
+
+        // Do this after everything is initialized
+        runGame(tracker);
+    }
+
+    @Override
+    protected void onStop() {
+        Log.i(TAG, "onStop");
+        super.onStop();
+
+        GameExecutor.instance().finalize();
+    }
+
+    @Override
+    protected void onPause() {
+        Log.i(TAG, "onPause");
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        Log.i(TAG, "onResume");
+        super.onResume();
     }
 
     @Override
@@ -121,7 +143,8 @@ public class MainActivity extends AppCompatActivity {
 
         super.onSaveInstanceState(bundle);
 
-        GameExecutor.instance().getGameState()
+        GameExecutor.instance()
+                .getGameState()
                 .map(tracker -> {
                     String serial = GameExecutorSerializer.serialize(tracker);
                     bundle.putString(KEY_EXECUTOR, serial);
@@ -131,9 +154,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onRestoreInstanceState(Bundle bundle) {
-        Log.i(TAG, "onSaveInstanceState");
+        Log.i(TAG, "onRestoreInstanceState");
 
         super.onRestoreInstanceState(bundle);
+
+        if (bundle != null) {
+            tracker = Optional.ofNullable(
+                    GameExecutorSerializer.deserialize(bundle.getString(KEY_EXECUTOR)));
+        }
     }
 
     // endregion
@@ -276,4 +304,5 @@ public class MainActivity extends AppCompatActivity {
 
     private Handler mHandler;
     private BoardAdapter mBoardAdaptor;
+    private Optional<GameExecutor.Tracker> tracker = Optional.empty();
 }
