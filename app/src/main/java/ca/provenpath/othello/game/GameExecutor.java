@@ -181,9 +181,13 @@ public class GameExecutor {
 
             try {
                 gameThread.join(5000);
+                if (gameThread.isAlive()) {
+                    Log.w(TAG, "Game thread did not complete.");
+                }
+                gameThread = null;
+                stopGameThread = false;
             } catch (InterruptedException e) {
             }
-            stopGameThread = false;
         }
     }
 
@@ -204,6 +208,8 @@ public class GameExecutor {
             Function<BoardValue, SharedPreferences> prefs,
             Optional<Tracker> inTracker) {
 
+        Log.i(TAG, "runOneGame");
+
         if (!inTracker.isPresent()) {
             inTracker = Optional.of(newGame());  // beware side effects
         }
@@ -213,6 +219,7 @@ public class GameExecutor {
         while (tracker.getState() != GameState.GAME_OVER && !stopGameThread) {
             applyPreferences(prefs, tracker);
 
+            Log.i(TAG, "runOneGame: updating current state");
             currentState = tracker;
 
             tracker = Optional.ofNullable(
@@ -228,11 +235,18 @@ public class GameExecutor {
                             // FIXME Reactor Core doesn't have a way to get a UI thread Scheduler.
                             //       Would really like to avoid the Handler.
                             .doOnNext(trkr -> sendRedrawRequest(uiThreadHandler, trkr))
-                            .doOnError(error -> sendRedrawRequest(uiThreadHandler, null)) // FIXME
+                            .doOnError(error -> {
+                                Log.i(TAG, "runOneGame", error);
+                                sendRedrawRequest(uiThreadHandler, null);
+                            }) // FIXME
                             .blockLast())
-                    .orElse(tracker); // keep old state on error
+                    .orElse(new Tracker(tracker)); // keep old state on error
 
         }
+
+        Log.i(TAG, "runOneGame: game complete");
+
+        stopGameThread = false;
     }
 
     private Tracker newGame() {
@@ -240,6 +254,7 @@ public class GameExecutor {
 
         // Beware the side effects
         history.clear();
+        currentState = null;
 
         Tracker tracker = new Tracker();
         tracker.state = GameState.TURN_PLAYER_0;

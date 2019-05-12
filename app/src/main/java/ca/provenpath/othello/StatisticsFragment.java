@@ -88,9 +88,12 @@ public class StatisticsFragment extends Fragment {
     }
 
     private void drawText(int viewId, String msg) {
-        View view = getView().findViewById(viewId);
-        if (view instanceof TextView) {
-            ((TextView) view).setText(msg);
+        View view = getView();
+        if (view != null) {
+            view = view.findViewById(viewId);
+            if (view instanceof TextView) {
+                ((TextView) view).setText(msg);
+            }
         }
     }
 }

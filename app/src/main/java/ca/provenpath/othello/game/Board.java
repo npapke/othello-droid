@@ -479,7 +479,7 @@ public class Board implements Cloneable, Iterable<Position>
             int i = 0;
             for (BoardValue cell : board)
             {
-                buf.append( cell.toString() );
+                buf.append( cell.toString(true) );
 
                 if ((++i % BOARD_SIZE) == 0)
                 {

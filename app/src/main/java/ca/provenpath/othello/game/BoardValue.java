@@ -21,10 +21,10 @@ package ca.provenpath.othello.game;
 
 /**
  * Represents the possible values a board location can take on.
+ *
  * @author npapke
  */
-public enum BoardValue
-{
+public enum BoardValue {
     EMPTY,
     WHITE,
     BLACK,
@@ -35,12 +35,11 @@ public enum BoardValue
 
     /**
      * Does the value represent a player?
+     *
      * @return true iff the value is a player
      */
-    public final boolean isPlayer()
-    {
-        switch (this)
-        {
+    public final boolean isPlayer() {
+        switch (this) {
             case WHITE:
             case BLACK:
                 return true;
@@ -53,42 +52,41 @@ public enum BoardValue
 
     /**
      * Is this the black player?  Bean-style convenience method.
+     *
      * @return true iff black player
      */
-    public final boolean isBlack()
-    {
+    public final boolean isBlack() {
         return this == BLACK;
     }
 
 
     /**
      * Is this the white player?  Bean-style convenience method.
+     *
      * @return true iff white player
      */
-    public final boolean isWhite()
-    {
+    public final boolean isWhite() {
         return this == WHITE;
     }
 
 
     /**
      * Is this cell empty?  Bean-style convenience method.
+     *
      * @return true iff empty
      */
-    public final boolean isEmpty()
-    {
+    public final boolean isEmpty() {
         return this == EMPTY;
     }
 
 
     /**
      * Is this a valid move (black or white)?  Bean-style convenience method.
+     *
      * @return true iff valid move
      */
-    public final boolean isValidMove()
-    {
-        switch (this)
-        {
+    public final boolean isValidMove() {
+        switch (this) {
             case VALID_BOTH:
             case VALID_BLACK:
             case VALID_WHITE:
@@ -102,12 +100,11 @@ public enum BoardValue
 
     /**
      * Return the opposite player
+     *
      * @return the other player
      */
-    public final BoardValue otherPlayer()
-    {
-        switch (this)
-        {
+    public final BoardValue otherPlayer() {
+        switch (this) {
             case WHITE:
                 return BLACK;
 
@@ -115,20 +112,23 @@ public enum BoardValue
                 return WHITE;
 
             default:
-                throw new IllegalArgumentException( "Not a player: " + this );
+                throw new IllegalArgumentException("Not a player: " + this);
         }
     }
 
 
     /**
      * Stingifier.
+     *
      * @return string representation
      */
     @Override
-    public String toString()
-    {
-        switch (this)
-        {
+    public String toString() {
+        return toString(false);
+    }
+
+    public String toString(boolean tidy) {
+        switch (this) {
             case WHITE:
                 return "W";
 
@@ -139,29 +139,28 @@ public enum BoardValue
                 return ".";
 
             case VALID_WHITE:
-                return "w";
+                return tidy ? "." : "w";
 
             case VALID_BLACK:
-                return "b";
+                return tidy ? "." : "b";
 
             case VALID_BOTH:
-                return "*";
+                return tidy ? "." : "*";
 
             default:
-                throw new IllegalStateException( "Unexpected value " + this.name() );
+                throw new IllegalStateException("Unexpected value " + this.name());
         }
     }
 
 
     /**
      * De-stringifier
+     *
      * @param c character representation
      * @return the board value
      */
-    static BoardValue fromChar( char c )
-    {
-        switch (c)
-        {
+    static BoardValue fromChar(char c) {
+        switch (c) {
             case 'W':
                 return WHITE;
 
@@ -181,7 +180,7 @@ public enum BoardValue
                 return VALID_BOTH;
 
             default:
-                throw new IllegalStateException( "Unexpected value: '" + c + "'" );
+                throw new IllegalStateException("Unexpected value: '" + c + "'");
         }
     }
 
