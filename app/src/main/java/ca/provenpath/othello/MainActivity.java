@@ -80,6 +80,9 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.undo).setOnClickListener(v -> undoGame());
         findViewById(R.id.newgame).setOnClickListener(v -> runGame(Optional.empty()));
 
+        getSupportFragmentManager().findFragmentById(R.id.statistics_fragment);
+        getSupportFragmentManager().findFragmentById(R.id.status_fragment);
+
         /*
          * Process requests on the UI thread.
          */
@@ -123,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "onStop");
         super.onStop();
 
-        GameExecutor.instance().finalize();
+        GameExecutor.instance().close();
     }
 
     @Override

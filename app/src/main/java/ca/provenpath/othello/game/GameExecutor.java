@@ -23,6 +23,7 @@ import android.content.SharedPreferences;
 import android.graphics.Path;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import ca.provenpath.othello.MainActivity;
 import ca.provenpath.othello.PlayerSettingsFragment;
@@ -38,7 +39,7 @@ import reactor.core.publisher.Mono;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 /**
@@ -142,12 +143,13 @@ public class GameExecutor {
     }
     //endregion
 
-    private Thread gameThread;
-    private volatile boolean stopGameThread;
+    private Executor gameExecutor = Executors.newSingleThreadExecutor();
+    private FutureTask<Void> gameTask;
+    private volatile boolean stopGameThread = false;
     private Deque<Tracker> history = new ConcurrentLinkedDeque<>();
     private Tracker currentState;
 
-    public void finalize() {
+    public void close() {
         endGame();
     }
 
@@ -164,30 +166,29 @@ public class GameExecutor {
 
         endGame();
 
-        gameThread = new Thread(() -> runOneGame(uiThreadHandler, prefs, tracker));
-        gameThread.setName("game");
-        gameThread.start();
+        gameTask = new FutureTask<>(() -> runOneGame(uiThreadHandler, prefs, tracker));
+        gameExecutor.execute(gameTask);
     }
 
-    private void endGame() {
+    private synchronized void endGame() {
         Log.i(TAG, "endGame");
-        if (gameThread != null) {
-            stopGameThread = true;
+        if (gameTask != null) {
 
+            stopGameThread = true;
             if (currentState != null) {
                 Arrays.stream(currentState.getPlayer())
                         .forEach(player -> player.interruptMove());
             }
 
             try {
-                gameThread.join(5000);
-                if (gameThread.isAlive()) {
-                    Log.w(TAG, "Game thread did not complete.");
-                }
-                gameThread = null;
+                gameTask.get();
+            } catch (InterruptedException | ExecutionException e) {
+                Log.i(TAG, "endgame", e);
+            } finally {
                 stopGameThread = false;
-            } catch (InterruptedException e) {
             }
+
+            gameTask = null;
         }
     }
 
@@ -203,10 +204,10 @@ public class GameExecutor {
         return history.stream().findFirst();
     }
 
-    private void runOneGame(
-            Handler uiThreadHandler,
-            Function<BoardValue, SharedPreferences> prefs,
-            Optional<Tracker> inTracker) {
+    private Void runOneGame(
+            @NonNull Handler uiThreadHandler,
+            @NonNull Function<BoardValue, SharedPreferences> prefs,
+            @NonNull Optional<Tracker> inTracker) {
 
         Log.i(TAG, "runOneGame");
 
@@ -246,7 +247,7 @@ public class GameExecutor {
 
         Log.i(TAG, "runOneGame: game complete");
 
-        stopGameThread = false;
+        return null;
     }
 
     private Tracker newGame() {
@@ -267,7 +268,7 @@ public class GameExecutor {
     /**
      * Sends redraw request to UI thread.
      */
-    private void sendRedrawRequest(Handler handler, Tracker tracker) {
+    private void sendRedrawRequest(@NonNull Handler handler, Tracker tracker) {
         Message msg = handler.obtainMessage(MainActivity.MSG_NOTIFICATION, tracker);
         msg.sendToTarget();
     }

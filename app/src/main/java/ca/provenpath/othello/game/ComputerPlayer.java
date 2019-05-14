@@ -142,12 +142,13 @@ public class ComputerPlayer extends Player {
                 .subscribeOn(Schedulers.newParallel("engine"), false)
                 .publishOn(Schedulers.newSingle("delivery"))
                 .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisNotification))
+                .delaySubscription(getDelayAfterTurnTime())
                 .flatMap(notification -> {
 
                     Duration delay = Duration.ZERO;
 
                     if (notification instanceof MoveNotification) {
-                        // Making the move.  Shall we delay to give
+                        // This is the final notification for this move.
                         delay = getMinTurnTime()
                                 .minus(Duration.between(((MoveNotification) notification).getGameStart(), Instant.now()));
                         delay = delay.isNegative() ? Duration.ZERO : delay;
