@@ -37,10 +37,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
 import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Delayed;
 import java.util.function.Consumer;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
@@ -62,7 +60,7 @@ public class ComputerPlayer extends Player {
     Strategy strategy = new AdaptiveStrategy();
     boolean showOverlay = false;
     Duration minTurnTime = Duration.ZERO;
-    Duration delayAfterTurnTime = Duration.of(2, SECONDS);
+    Duration delayInitialNotification = Duration.of(1, SECONDS);
 
 
     public ComputerPlayer(BoardValue color) {
@@ -79,8 +77,8 @@ public class ComputerPlayer extends Player {
         setMinTurnTime(Duration.of(
                 Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_MIN_TIME_MS, "0")),
                 MILLIS));
-        setDelayAfterTurnTime(Duration.of(
-                Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_DELAY_TIME_MS, "2000")),
+        setDelayInitialNotification(Duration.of(
+                Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_DELAY_TIME_MS, "1000")),
                 MILLIS));
 
         setShowOverlay(prefs.getBoolean(PlayerSettingsFragment.KEY_ISOVERLAY_ANALYSIS, false));
@@ -132,17 +130,13 @@ public class ComputerPlayer extends Player {
                             duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999));
 
                     sink.next(new MoveNotification(new Move(color, result.getBestPosition()), startProcessing));
-                    try {
-                        Thread.sleep(getDelayAfterTurnTime().toMillis());
-                    } catch (InterruptedException e) {
-                    }
                     sink.complete();
 
                 })
                 .subscribeOn(Schedulers.newParallel("engine"), false)
                 .publishOn(Schedulers.newSingle("delivery"))
                 .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisNotification))
-                .delaySubscription(getDelayAfterTurnTime())
+                .delaySubscription(getDelayInitialNotification())
                 .flatMap(notification -> {
 
                     Duration delay = Duration.ZERO;
@@ -152,7 +146,6 @@ public class ComputerPlayer extends Player {
                         delay = getMinTurnTime()
                                 .minus(Duration.between(((MoveNotification) notification).getGameStart(), Instant.now()));
                         delay = delay.isNegative() ? Duration.ZERO : delay;
-                        //delay = delay.plus(getDelayAfterTurnTime());
                     }
 
                     return Flux.just((GameNotification) notification).delaySubscription(delay);

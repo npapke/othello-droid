@@ -30,7 +30,7 @@
     <string name="pref_isoverlay_analysis">Overlay</string>
     <string name="pref_min_time">Turns take at least this long in seconds</string>
     <string name="pref_min_time_default">0</string>
-    <string name="pref_delay_time">Delay after move in seconds</string>
+    <string name="pref_delay_time">Delay initial notification in seconds</string>
     <string name="pref_delay_time_default">0</string>
 
     <!-- TODO: Remove or change this placeholder text -->
