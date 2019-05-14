@@ -19,6 +19,7 @@
 
 package ca.provenpath.othello;
 
+import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -32,11 +33,16 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.GridView;
-import ca.provenpath.othello.game.*;
+import ca.provenpath.othello.game.BoardValue;
+import ca.provenpath.othello.game.GameExecutor;
+import ca.provenpath.othello.game.GameExecutorSerializer;
+import ca.provenpath.othello.game.Player;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
 import ca.provenpath.othello.game.observer.EngineNotification;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
+import ca.provenpath.othello.persistence.KeyValue;
+import ca.provenpath.othello.persistence.StateDatabase;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -58,9 +64,11 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
-        if (savedInstanceState != null) {
-            onRestoreInstanceState(savedInstanceState);
-        }
+        database = Room.databaseBuilder(this, StateDatabase.class, "othstate")
+                .allowMainThreadQueries()
+                .build();
+
+        onRestoreInstanceState(savedInstanceState);
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
@@ -110,12 +118,23 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "onDestroy");
 
         super.onDestroy();
+
+        database.close();
     }
 
     @Override
     protected void onStart() {
         Log.i(TAG, "onStart");
         super.onStart();
+
+        if (!tracker.isPresent()) {
+            Log.i(TAG, "restoring from DB");
+            KeyValue kv = database.getKeyValueDao().getByKey(KEY_EXECUTOR);
+            if (kv != null) {
+                tracker = Optional.ofNullable(
+                        GameExecutorSerializer.deserialize(kv.getValue()));
+            }
+        }
 
         // Do this after everything is initialized
         runGame(tracker);
@@ -125,6 +144,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         Log.i(TAG, "onStop");
         super.onStop();
+
+        GameExecutor.instance()
+                .getGameState()
+                .map(tracker -> {
+                    String serial = GameExecutorSerializer.serialize(tracker);
+                    database.getKeyValueDao().insert(new KeyValue(KEY_EXECUTOR, serial));
+                    return serial;
+                });
 
         GameExecutor.instance().close();
     }
@@ -154,18 +181,19 @@ public class MainActivity extends AppCompatActivity {
                     bundle.putString(KEY_EXECUTOR, serial);
                     return serial;
                 });
+
     }
 
     @Override
     protected void onRestoreInstanceState(Bundle bundle) {
         Log.i(TAG, "onRestoreInstanceState");
 
-        super.onRestoreInstanceState(bundle);
-
         if (bundle != null) {
+            super.onRestoreInstanceState(bundle);
             tracker = Optional.ofNullable(
                     GameExecutorSerializer.deserialize(bundle.getString(KEY_EXECUTOR)));
         }
+
     }
 
     // endregion
@@ -318,4 +346,5 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private BoardAdapter mBoardAdaptor;
     private Optional<GameExecutor.Tracker> tracker = Optional.empty();
+    private StateDatabase database;
 }
