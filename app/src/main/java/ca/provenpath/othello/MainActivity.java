@@ -132,7 +132,13 @@ public class MainActivity extends AppCompatActivity {
             KeyValue kv = database.getKeyValueDao().getByKey(KEY_EXECUTOR);
             if (kv != null) {
                 tracker = Optional.ofNullable(
-                        GameExecutorSerializer.deserialize(kv.getValue()));
+                        GameExecutorSerializer.deserialize(kv.getValue(), GameExecutor.Tracker.class));
+            }
+
+            kv = database.getKeyValueDao().getByKey(KEY_HISTORY);
+            if (kv != null) {
+                GameExecutor.instance().setHistory(
+                        GameExecutorSerializer.deserialize(kv.getValue(), GameExecutor.Tracker[].class));
             }
         }
 
@@ -152,6 +158,9 @@ public class MainActivity extends AppCompatActivity {
                     database.getKeyValueDao().insert(new KeyValue(KEY_EXECUTOR, serial));
                     return serial;
                 });
+
+        String serial = GameExecutorSerializer.serialize(GameExecutor.instance().getHistory());
+        database.getKeyValueDao().insert(new KeyValue(KEY_HISTORY, serial));
 
         GameExecutor.instance().close();
     }
@@ -191,7 +200,7 @@ public class MainActivity extends AppCompatActivity {
         if (bundle != null) {
             super.onRestoreInstanceState(bundle);
             tracker = Optional.ofNullable(
-                    GameExecutorSerializer.deserialize(bundle.getString(KEY_EXECUTOR)));
+                    GameExecutorSerializer.deserialize(bundle.getString(KEY_EXECUTOR), GameExecutor.Tracker.class));
         }
 
     }
@@ -341,7 +350,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int MSG_NOTIFICATION = 342;
 
     private static final String KEY_EXECUTOR = MainActivity.class.getName() + ".executor-1";
-    private static final String KEY_LAST_MOVE = MainActivity.class.getName() + ".lastMove-1";
+    private static final String KEY_HISTORY = MainActivity.class.getName() + ".history-1";
 
     private Handler mHandler;
     private BoardAdapter mBoardAdaptor;

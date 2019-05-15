@@ -32,71 +32,54 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Serializes and deserializes GameExcutors.  All non-transient state is in the Tracker.
- *
+ * <p>
  * Note: The reason this exists is because Players
  * are polymorphic and Gson (really Json) cannot handle it
  * without help.
- *
+ * <p>
  * Created by npapke on 3/19/15.
  */
-public class GameExecutorSerializer
-{
+public class GameExecutorSerializer {
     public final static String TAG = GameExecutorSerializer.class.getName();
 
-    public static GameExecutor.Tracker deserialize( String serial )
-    {
-        GameExecutor.Tracker tracker = null;
+    public static <T> T deserialize(String serial, Class<T> clz) {
+        T value = null;
 
-        try
-        {
+        try {
             Gson deserializer = new GameExecutorSerializer().makeGson();
-            Log.d( TAG, "serialized=" + serial );
+            Log.d(TAG, "deserialize=" + serial);
 
-            tracker = deserializer.fromJson( serial, GameExecutor.Tracker.class );
-            if (tracker != null && !tracker.isConsistent())
-            {
-                tracker = null;
-            }
-        }
-        catch (Exception e)
-        {
-            Log.w( TAG, "deserialize", e );
+            value = deserializer.fromJson(serial, clz);
+        } catch (Exception e) {
+            Log.w(TAG, "deserialize " + clz.getName(), e);
         }
 
-        return tracker;
+        return value;
     }
 
-    public static String serialize( GameExecutor.Tracker src )
-    {
-        try
-        {
+    public static <T> String serialize(T src) {
+        try {
             Gson serializer = new GameExecutorSerializer().makeGson();
 
-            // FIXME Thread-safety
-            String data = serializer.toJson( src );
+            String data = serializer.toJson(src);
 
-            Log.d( TAG, "Serialized=" + data );
+            Log.d(TAG, "Serialized=" + data);
 
             return data;
-        }
-        catch (Exception e)
-        {
-            Log.w( TAG, "Serialization failed", e );
+        } catch (Exception e) {
+            Log.w(TAG, "Serialization failed", e);
             return null;
         }
     }
 
-    private Gson makeGson()
-    {
+    private Gson makeGson() {
         GsonBuilder gson = new GsonBuilder()
-            .registerTypeAdapter( Player.class, new PlayerDeserializer() )
-            .registerTypeAdapter( Player.class, new PlayerSerializer() )
-            .serializeNulls();
+                .registerTypeAdapter(Player.class, new PlayerDeserializer())
+                .registerTypeAdapter(Player.class, new PlayerSerializer())
+                .serializeNulls();
 
         return gson.create();
     }
@@ -109,45 +92,38 @@ public class GameExecutorSerializer
      *
      */
 
-    private class PlayerDeserializer implements JsonDeserializer<Player>
-    {
-        public Player deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context )
-                throws JsonParseException
-        {
-            try
-            {
+    private class PlayerDeserializer implements JsonDeserializer<Player> {
+        public Player deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+                throws JsonParseException {
+            try {
                 String serial = json.getAsJsonPrimitive().getAsString();
-                Log.d( TAG, "PlayerSerializer deserialize " + serial );
+                Log.d(TAG, "PlayerSerializer deserialize " + serial);
 
-                String[] fields = serial.split( ";", 2 );
+                String[] fields = serial.split(";", 2);
                 String playerClassName = fields[0];
                 String playerSerial = fields[1];
 
                 Player player = (Player)
-                        Class.forName( playerClassName ).getConstructor( String.class ).newInstance( playerSerial );
+                        Class.forName(playerClassName).getConstructor(String.class).newInstance(playerSerial);
 
                 return player;
-            }
-            catch (Exception e)
-            {
-                Log.w( TAG, "Serialization failed", e );
+            } catch (Exception e) {
+                Log.w(TAG, "Serialization failed", e);
                 return null;
             }
         }
     }
 
-    private class PlayerSerializer implements JsonSerializer<Player>
-    {
-        public JsonElement serialize( Player src, Type typeOfSrc, JsonSerializationContext context )
-        {
+    private class PlayerSerializer implements JsonSerializer<Player> {
+        public JsonElement serialize(Player src, Type typeOfSrc, JsonSerializationContext context) {
             StringBuilder out = new StringBuilder();
-            out.append( src.getClass().getCanonicalName() );
-            out.append( ';' );
-            out.append( src.toString() );
+            out.append(src.getClass().getCanonicalName());
+            out.append(';');
+            out.append(src.toString());
 
-            Log.d( TAG, "PlayerSerializer serialize " + out.toString() );
+            Log.d(TAG, "PlayerSerializer serialize " + out.toString());
 
-            return new JsonPrimitive( out.toString() );
+            return new JsonPrimitive(out.toString());
         }
     }
 

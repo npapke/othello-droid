@@ -38,6 +38,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -202,6 +203,15 @@ public class GameExecutor {
 
     public synchronized Optional<Tracker> peekUndoGameState() {
         return history.stream().findFirst();
+    }
+
+    public synchronized Tracker[] getHistory() {
+        return history.toArray(new Tracker[0]);
+    }
+
+    public synchronized void setHistory(Tracker[] trackers) {
+        history.clear();
+        history.addAll(Arrays.asList(trackers));
     }
 
     private Void runOneGame(
