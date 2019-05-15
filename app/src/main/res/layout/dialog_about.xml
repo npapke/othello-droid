@@ -8,14 +8,16 @@
         android:id="@+id/about_msg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="@style/Base.TextAppearance.AppCompat.Subhead"
+        android:layout_margin="10px"
+        style="@style/Base.TextAppearance.AppCompat.Body1"
         android:text="@string/about_text"/>
 
     <TextView
         android:id="@+id/about_copyright"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="@style/Base.TextAppearance.AppCompat.Subhead"
+        android:layout_margin="10px"
+        style="@style/Base.TextAppearance.AppCompat.Body1"
         android:text="@string/copyright"/>
 
 </LinearLayout>
