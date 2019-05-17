@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
 
-        database = Room.databaseBuilder(this, StateDatabase.class, "othstate")
+        mDatabase = Room.databaseBuilder(this, StateDatabase.class, "othstate")
                 .allowMainThreadQueries()
                 .build();
 
@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
 
         super.onDestroy();
 
-        database.close();
+        mDatabase.close();
     }
 
     @Override
@@ -129,13 +129,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (!mTracker.isPresent()) {
             Log.i(TAG, "restoring from DB");
-            KeyValue kv = database.getKeyValueDao().getByKey(KEY_EXECUTOR);
+            KeyValue kv = mDatabase.getKeyValueDao().getByKey(KEY_EXECUTOR);
             if (kv != null) {
                 mTracker = Optional.ofNullable(
                         GameExecutorSerializer.deserialize(kv.getValue(), GameExecutor.Tracker.class));
             }
 
-            kv = database.getKeyValueDao().getByKey(KEY_HISTORY);
+            kv = mDatabase.getKeyValueDao().getByKey(KEY_HISTORY);
             if (kv != null) {
                 GameExecutor.instance().setHistory(
                         GameExecutorSerializer.deserialize(kv.getValue(), GameExecutor.Tracker[].class));
@@ -155,12 +155,12 @@ public class MainActivity extends AppCompatActivity {
                 .getGameState()
                 .map(tracker -> {
                     String serial = GameExecutorSerializer.serialize(tracker);
-                    database.getKeyValueDao().insert(new KeyValue(KEY_EXECUTOR, serial));
+                    mDatabase.getKeyValueDao().insert(new KeyValue(KEY_EXECUTOR, serial));
                     return tracker;
                 });
 
         String serial = GameExecutorSerializer.serialize(GameExecutor.instance().getHistory());
-        database.getKeyValueDao().insert(new KeyValue(KEY_HISTORY, serial));
+        mDatabase.getKeyValueDao().insert(new KeyValue(KEY_HISTORY, serial));
 
         GameExecutor.instance().close();
     }
@@ -355,5 +355,5 @@ public class MainActivity extends AppCompatActivity {
     private Handler mHandler;
     private BoardAdapter mBoardAdaptor;
     private Optional<GameExecutor.Tracker> mTracker = Optional.empty();
-    private StateDatabase database;
+    private StateDatabase mDatabase;
 }

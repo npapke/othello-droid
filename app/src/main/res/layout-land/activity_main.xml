@@ -1,27 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    >
-
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"/>
-
-    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
-        android:layout_gravity="center"
+>
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:layout_weight="1">
+
+        <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="?attr/colorPrimary"
+                android:elevation="4dp"
+                android:theme="@style/ThemeOverlay.AppCompat.ActionBar"/>
+
+        <fragment
+                android:id="@+id/status_fragment"
+                android:name="ca.provenpath.othello.GameStatusFragment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:layout_weight="1"
         >
 
-        <ca.provenpath.othello.SquareGridView
+            <Button
+                    android:id="@+id/newgame"
+                    android:layout_width="@dimen/main_activity_button_width"
+                    android:layout_height="@dimen/main_activity_button_height"
+                    android:enabled="true"
+                    android:text="@string/newgame"/>
+
+            <Button
+                    android:id="@+id/undo"
+                    android:layout_width="@dimen/main_activity_button_width"
+                    android:layout_height="@dimen/main_activity_button_height"
+                    android:enabled="true"
+                    android:text="@string/undo"/>
+
+        </LinearLayout>
+
+        <fragment
+                android:id="@+id/statistics_fragment"
+                android:name="ca.provenpath.othello.StatisticsFragment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+
+    <ca.provenpath.othello.SquareGridView
             android:id="@+id/gridview"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
@@ -29,52 +67,7 @@
             android:verticalSpacing="0dp"
             android:numColumns="8"
             android:stretchMode="columnWidth"
-            />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:layout_weight="1">
-
-            <fragment
-                android:id="@+id/status_fragment"
-                android:name="ca.provenpath.othello.GameStatusFragment"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:orientation="horizontal"
-                android:layout_weight="1"
-                >
-
-                <Button
-                    android:id="@+id/newgame"
-                    android:layout_width="@dimen/main_activity_button_width"
-                    android:layout_height="@dimen/main_activity_button_height"
-                    android:enabled="true"
-                    android:text="@string/newgame"/>
-
-                <Button
-                    android:id="@+id/undo"
-                    android:layout_width="@dimen/main_activity_button_width"
-                    android:layout_height="@dimen/main_activity_button_height"
-                    android:enabled="true"
-                    android:text="@string/undo"/>
-
-            </LinearLayout>
-
-            <fragment
-                    android:id="@+id/statistics_fragment"
-                    android:name="ca.provenpath.othello.StatisticsFragment"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-
-        </LinearLayout>
-
-    </LinearLayout>
+    />
 
 </LinearLayout>
 
