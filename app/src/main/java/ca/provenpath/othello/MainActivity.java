@@ -127,11 +127,11 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "onStart");
         super.onStart();
 
-        if (!tracker.isPresent()) {
+        if (!mTracker.isPresent()) {
             Log.i(TAG, "restoring from DB");
             KeyValue kv = database.getKeyValueDao().getByKey(KEY_EXECUTOR);
             if (kv != null) {
-                tracker = Optional.ofNullable(
+                mTracker = Optional.ofNullable(
                         GameExecutorSerializer.deserialize(kv.getValue(), GameExecutor.Tracker.class));
             }
 
@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Do this after everything is initialized
-        runGame(tracker);
+        runGame(mTracker);
     }
 
     @Override
@@ -151,12 +151,12 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "onStop");
         super.onStop();
 
-        GameExecutor.instance()
+        mTracker = GameExecutor.instance()
                 .getGameState()
                 .map(tracker -> {
                     String serial = GameExecutorSerializer.serialize(tracker);
                     database.getKeyValueDao().insert(new KeyValue(KEY_EXECUTOR, serial));
-                    return serial;
+                    return tracker;
                 });
 
         String serial = GameExecutorSerializer.serialize(GameExecutor.instance().getHistory());
@@ -199,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (bundle != null) {
             super.onRestoreInstanceState(bundle);
-            tracker = Optional.ofNullable(
+            mTracker = Optional.ofNullable(
                     GameExecutorSerializer.deserialize(bundle.getString(KEY_EXECUTOR), GameExecutor.Tracker.class));
         }
 
@@ -354,6 +354,6 @@ public class MainActivity extends AppCompatActivity {
 
     private Handler mHandler;
     private BoardAdapter mBoardAdaptor;
-    private Optional<GameExecutor.Tracker> tracker = Optional.empty();
+    private Optional<GameExecutor.Tracker> mTracker = Optional.empty();
     private StateDatabase database;
 }
