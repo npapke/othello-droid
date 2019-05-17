@@ -133,7 +133,7 @@ public class ComputerPlayer extends Player {
                     sink.complete();
 
                 })
-                .subscribeOn(Schedulers.newParallel("engine"), false)
+                .subscribeOn(Schedulers.newSingle("engine"), false)
                 .publishOn(Schedulers.newSingle("delivery"))
                 .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisNotification))
                 .delaySubscription(getDelayInitialNotification())
