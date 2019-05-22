@@ -364,7 +364,6 @@ public class Board implements Cloneable, Iterable<Position>
             else if (other.equals( left ) && other.equals( right ))
             {
                 // my piece is boxed in
-                // TODO is this really protected?
                 ++score;
             }
         }

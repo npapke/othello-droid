@@ -39,6 +39,7 @@ public class AdaptiveStrategy extends Strategy {
         int freedom = 0;
         int threats = 0;
         int numMoves = 0;
+        int antiBuffs = 0;
 
         BoardValue otherPlayer = player.otherPlayer();
 
@@ -49,16 +50,23 @@ public class AdaptiveStrategy extends Strategy {
                 scoreMe++;
                 numMoves++;
                 protectedScore += calcProtectedScore(board.countProtected(lpos), lpos);
+                antiBuffs += calcAntiBuffs(board, lpos);
             } else if (curCell == otherPlayer) {
                 scoreOther++;
                 numMoves++;
-                // protectedScore -= calcProtectedScore( board.countProtected( lpos ), lpos );
+                protectedScore -= calcProtectedScore(board.countProtected(lpos), lpos);
+                antiBuffs -= calcAntiBuffs(board, lpos);
             } else if (board.isValidMove(player, lpos)) {
                 freedom++;
             } else if (board.isValidMove(otherPlayer, lpos)) {
                 threats++;
             }
         }
+
+        // TODO the edge evaluation considers adjacent empty cells and opponents to be equal.
+        //      they are not. either need a "flippable" anti-buff or a better protected score
+        //      algorithm.
+        //      algorithm is not prioritizing corners enough.
 
         // A guaranteed win/loss
         if (scoreMe == 0) {
@@ -72,29 +80,74 @@ public class AdaptiveStrategy extends Strategy {
             return determineFinalScore(player, board);
         }
 
-        int finalScore;
 
         freedom = scale(freedom, 0, 16);  // a large max is not realistic
         threats = scale(threats, 0, 16);  // a large max is not realistic
 
-        // Allow scores to go negative, i.e., [0,100] -> [-100,100]
-        int score = scale(scoreMe, 0, numMoves);
-        //protectedScore = scale( protectedScore, 0, numMoves * 8 );
+        int score = scoreMe;//- scoreOther;
 
         /*
          * The following is conjecture
          */
-        if (numMoves < 16) {
-            finalScore = (freedom * 10) + (protectedScore * 40) + (score * 50) - (threats * 00);
-        } else if (numMoves < 60) {
-            finalScore = (freedom * 0) + (protectedScore * 30) + (score * 70) - (threats * 00);
-        } else if (numMoves < 64) {
-            finalScore = (freedom * 0) + (protectedScore * 0) + (score * 100) - (threats * 0);
-        } else {
-            finalScore = score * 100;
-        }
+        int finalScore = (freedom * 0)
+                + (protectedScore * 1)
+                + (score * 1)
+                - (threats * 00)
+                - (antiBuffs * 1);
 
-        return finalScore / 10;
+        return finalScore;
+    }
+
+    private int calcAntiBuffs(Board board, int lpos) {
+
+        int score = 0;
+        switch (lpos) {
+            case 9:
+                score += 2 * buffIfEmpty(board, 0);
+                break;
+            case 14:
+                score += 2 * buffIfEmpty(board, 7);
+                break;
+            case 49:
+                score += 2 * buffIfEmpty(board, 56);
+                break;
+            case 54:
+                score += 2 * buffIfEmpty(board, 63);
+                break;
+
+            case 10:
+            case 11:
+            case 12:
+            case 13:
+                score += buffIfEmpty(board, lpos - 8);
+                break;
+
+            case 17:
+            case 25:
+            case 33:
+            case 42:
+                score += buffIfEmpty(board, lpos - 1);
+                break;
+
+            case 22:
+            case 30:
+            case 38:
+            case 46:
+                score += buffIfEmpty(board, lpos + 1);
+                break;
+
+            case 50:
+            case 51:
+            case 52:
+            case 53:
+                score += buffIfEmpty(board, lpos + 8);
+                break;
+        }
+        return score;
+    }
+
+    private int buffIfEmpty(Board board, int lpos) {
+        return board.isEmptyBoardValue(new Position(lpos)) ? 1 : 0;
     }
 
     /**
@@ -108,7 +161,7 @@ public class AdaptiveStrategy extends Strategy {
     private int scale(int value, int min, int max) {
         int clipped = Math.min(Math.max(value, min), max);
 
-        return (clipped - min) * 1000 / (max - min);
+        return (clipped - min) * 100 / (max - min);
     }
 
     /**
@@ -132,8 +185,7 @@ public class AdaptiveStrategy extends Strategy {
      * @return
      */
     private int calcProtectedScore(int count, int pos) {
-        //return (count >= 3 ? (count - 2) * 2 : 0) + (Position.isEdge( pos ) ? 2 : 0);
-        return Math.max(0,count -2) * 4 + (Position.isEdge(pos) ? 4 : 0);
+        return (1 << count) - 1;
     }
 
     @Override

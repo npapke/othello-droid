@@ -256,6 +256,7 @@ public class GameExecutor {
         }
 
         Log.i(TAG, "runOneGame: game complete");
+        currentState = tracker;
 
         return null;
     }
