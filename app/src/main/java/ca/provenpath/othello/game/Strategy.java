@@ -21,6 +21,9 @@ package ca.provenpath.othello.game;
 
 public abstract class Strategy
 {
+    public final static int WIN_BASE = Integer.MAX_VALUE - Board.BOARD_LSIZE;
+    public final static int LOSS_BASE = Integer.MIN_VALUE;
+
     /** Assign a numeric value to the board.
      * @param player the perspective of the player to evaluate the board from
      * @param board the board to evaluate
@@ -55,8 +58,18 @@ public abstract class Strategy
 
         // Translate the value to ensure that terminal boards are more important
         // than non-terminal boards
-        return (score >= otherScore) ? (10000 + score)  : (-10000 + score);
+        return (score >= otherScore) ? (WIN_BASE + score)  : (LOSS_BASE + score);
     }
 
+    public static int normalizeScore(int score) {
+
+        if (score >= WIN_BASE) {
+            return score - WIN_BASE;
+        } else if (score <= (LOSS_BASE + Board.BOARD_LSIZE)) {
+            return -(score - LOSS_BASE);
+        } else {
+            return score;
+        }
+    }
 
 }

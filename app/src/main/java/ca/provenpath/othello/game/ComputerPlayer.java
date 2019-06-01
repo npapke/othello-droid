@@ -103,8 +103,12 @@ public class ComputerPlayer extends Player {
     @Override
     public Flux<GameNotification> makeMove(Board board) {
 
+        Log.i(TAG, "makeMove");
+
         return Flux
                 .create(sink -> {
+
+                    Log.i(TAG, "makeMove - executing sink");
 
                     Assert.notNull(color);
                     Assert.notNull(strategy);
@@ -139,18 +143,23 @@ public class ComputerPlayer extends Player {
                 .publishOn(Schedulers.newSingle("delivery"))
                 .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisNotification))
                 .delaySubscription(getDelayInitialNotification())
-                .flatMap(notification -> {
-
-                    Duration delay = Duration.ZERO;
+                .flatMapSequential(notification -> {
 
                     if (notification instanceof MoveNotification) {
+
                         // This is the final notification for this move.
-                        delay = getMinTurnTime()
+                        Duration delay = getMinTurnTime()
                                 .minus(Duration.between(((MoveNotification) notification).getGameStart(), Instant.now()));
                         delay = delay.isNegative() ? Duration.ZERO : delay;
+                        return Flux.just((GameNotification) notification).delaySubscription(delay);
+
+                    } else if (notification instanceof AnalysisNotification) {
+                        // Make the score more human readable
+                        ((AnalysisNotification) notification).setValue(
+                                Strategy.normalizeScore(((AnalysisNotification) notification).getValue()));
                     }
 
-                    return Flux.just((GameNotification) notification).delaySubscription(delay);
+                    return Flux.just((GameNotification) notification);
                 });
     }
 

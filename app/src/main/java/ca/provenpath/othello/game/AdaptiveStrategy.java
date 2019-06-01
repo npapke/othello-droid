@@ -66,18 +66,6 @@ public class AdaptiveStrategy extends Strategy {
             }
         }
 
-        // TODO the edge evaluation considers adjacent empty cells and opponents to be equal.
-        //      they are not. either need a "flippable" anti-buff or a better protected score
-        //      algorithm.
-        //      algorithm is not prioritizing corners enough.
-
-        // A guaranteed win/loss
-        if (scoreMe == 0) {
-            return Integer.MIN_VALUE;
-        } else if (scoreOther == 0) {
-            return Integer.MAX_VALUE;
-        }
-
         // nobody has a move
         if (freedom == 0 && threats == 0) {
             return determineFinalScore(player, board);

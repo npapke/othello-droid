@@ -316,7 +316,7 @@ public class GameExecutor {
                         case TURN_PLAYER_1: {
                             Player me = (tracker.state == GameState.TURN_PLAYER_0) ? tracker.player[0] : tracker.player[1];
                             return me.makeMove(tracker.board)
-                                    .flatMap(notification -> {
+                                    .flatMapSequential(notification -> {
                                         Tracker copy = new Tracker(tracker);
                                         copy.setNotification(notification);
                                         return Flux.just(copy);
