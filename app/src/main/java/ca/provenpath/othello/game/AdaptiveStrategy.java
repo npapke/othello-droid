@@ -92,11 +92,11 @@ public class AdaptiveStrategy extends Strategy {
         /*
          * The following is conjecture
          */
-        int finalScore = (freedom * 0)
+        int finalScore = (freedom * 1)
                 + (protectedScore * 1)
-                + (score * 3)
-                + (buffs * 1)
-                - (threats * 00)
+                + (score * 10)
+                + (buffs * 3)
+                - (threats * 01)
                 - (antiBuffs * 1);
 
         return finalScore;
@@ -119,30 +119,53 @@ public class AdaptiveStrategy extends Strategy {
 
     private int calcAntiBuffs(Board board, int lpos) {
 
+        final int cornerWeight = 5;
+        final int nearCornerWeight = 3;
+
         int score = 0;
         switch (lpos) {
             /*
              * Corners
              */
             case 9:
-                score += 2 * buffIfEmpty(board, 0);
+                score += cornerWeight * buffIfEmpty(board, 0);
                 score += buffIfEmpty(board, 1);
                 score += buffIfEmpty(board, 8);
                 break;
             case 14:
-                score += 2 * buffIfEmpty(board, 7);
+                score += cornerWeight * buffIfEmpty(board, 7);
                 score += buffIfEmpty(board, 6);
                 score += buffIfEmpty(board, 15);
                 break;
             case 49:
-                score += 2 * buffIfEmpty(board, 56);
+                score += cornerWeight * buffIfEmpty(board, 56);
                 score += buffIfEmpty(board, 48);
                 score += buffIfEmpty(board, 57);
                 break;
             case 54:
-                score += 2 * buffIfEmpty(board, 63);
+                score += cornerWeight * buffIfEmpty(board, 63);
                 score += buffIfEmpty(board, 55);
                 score += buffIfEmpty(board, 62);
+                break;
+
+            /*
+             * Next to corner
+             */
+            case 1:
+            case 8:
+                score += nearCornerWeight * buffIfEmpty(board, 0);
+                break;
+            case 6:
+            case 15:
+                score += nearCornerWeight * buffIfEmpty(board, 7);
+                break;
+            case 48:
+            case 57:
+                score += nearCornerWeight * buffIfEmpty(board, 56);
+                break;
+            case 55:
+            case 62:
+                score += nearCornerWeight * buffIfEmpty(board, 63);
                 break;
 
             /*
