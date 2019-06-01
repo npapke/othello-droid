@@ -26,6 +26,9 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.PrimitiveIterator;
+import java.util.Random;
+import java.util.stream.IntStream;
 
 import static ca.provenpath.othello.game.BoardValue.*;
 
@@ -184,12 +187,7 @@ public class Board implements Cloneable, Iterable<Position> {
      */
     @Override
     public int hashCode() {
-        int hash = 3;
-        for (int i = 0; i < this.board.length; i++) {
-            hash += this.board[i].ordinal() * (i + 1);
-        }
-
-        return hash;
+        return ZobristHash.getInstance().calcHash(this);
     }
 
 
@@ -741,5 +739,54 @@ public class Board implements Cloneable, Iterable<Position> {
 
     }
 
+    private static class ZobristHash {
+
+        final static int NUM_COLORS = 2;
+        private static ZobristHash instance;
+
+        int[][] table;
+
+        public static ZobristHash getInstance() {
+
+            if (instance == null) {
+                synchronized (ZobristHash.class) {
+                    if (instance == null) {
+                        instance = new ZobristHash();
+                    }
+                }
+            }
+
+            return instance;
+        }
+
+        private ZobristHash() {
+
+            table = new int[Board.BOARD_LSIZE][NUM_COLORS];
+
+            PrimitiveIterator.OfInt r = new Random().ints().iterator();
+
+            for (int pos = 0; pos < Board.BOARD_LSIZE; ++pos) {
+                for (int color = 0; color < NUM_COLORS; ++color) {
+                    table[pos][color] = r.nextInt();
+                }
+            }
+        }
+
+        int calcHash(Board board) {
+            int hash = 0;
+            for (int pos = 0; pos < Board.BOARD_LSIZE; ++pos) {
+
+                if (board.board[pos] == WHITE) {
+                    hash = hash ^ table[pos][0];
+                }
+                else if (board.board[pos] == BLACK) {
+                    hash = hash ^ table[pos][1];
+                }
+
+            }
+
+            return hash;
+        }
+    }
 
 }
