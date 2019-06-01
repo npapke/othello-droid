@@ -102,45 +102,76 @@ public class AdaptiveStrategy extends Strategy {
 
         int score = 0;
         switch (lpos) {
+            /*
+             * Corners
+             */
             case 9:
                 score += 2 * buffIfEmpty(board, 0);
+                score += buffIfEmpty(board, 1);
+                score += buffIfEmpty(board, 8);
                 break;
             case 14:
                 score += 2 * buffIfEmpty(board, 7);
+                score += buffIfEmpty(board, 6);
+                score += buffIfEmpty(board, 15);
                 break;
             case 49:
                 score += 2 * buffIfEmpty(board, 56);
+                score += buffIfEmpty(board, 48);
+                score += buffIfEmpty(board, 57);
                 break;
             case 54:
                 score += 2 * buffIfEmpty(board, 63);
+                score += buffIfEmpty(board, 55);
+                score += buffIfEmpty(board, 62);
                 break;
 
+            /*
+             * Top Edge
+             */
             case 10:
             case 11:
             case 12:
             case 13:
+                score += buffIfEmpty(board, lpos - 7);
                 score += buffIfEmpty(board, lpos - 8);
+                score += buffIfEmpty(board, lpos - 9);
                 break;
 
+            /*
+             * Left Edge
+             */
             case 17:
             case 25:
             case 33:
             case 42:
+                score += buffIfEmpty(board, lpos - 9);
                 score += buffIfEmpty(board, lpos - 1);
+                score += buffIfEmpty(board, lpos + 7);
                 break;
 
+            /*
+             * Right Edge
+             */
             case 22:
             case 30:
             case 38:
             case 46:
+                score += buffIfEmpty(board, lpos - 7);
                 score += buffIfEmpty(board, lpos + 1);
+                score += buffIfEmpty(board, lpos + 9);
                 break;
 
+            /*
+             * Bottom Edge
+             */
             case 50:
             case 51:
             case 52:
             case 53:
+                score += buffIfEmpty(board, lpos + 7);
                 score += buffIfEmpty(board, lpos + 8);
+                score += buffIfEmpty(board, lpos + 9);
                 break;
         }
         return score;
