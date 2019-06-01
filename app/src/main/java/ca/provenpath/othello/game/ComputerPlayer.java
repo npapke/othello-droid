@@ -37,6 +37,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
@@ -191,7 +193,9 @@ public class ComputerPlayer extends Player {
          * hint better candidates to the subsequent iteration.  alpha-beta pruning
          * benefits greatly from discovering the best solution early.
          */
-        for (int curDepth : new int[]{1, 3, depth}) {
+
+        List<Integer> depths = depth > 3 ? Arrays.asList(1, 3, depth) : Arrays.asList(depth);
+        for (int curDepth : depths) {
             // Always the maximizing player
             int alpha = Integer.MIN_VALUE;
             int beta = Integer.MAX_VALUE;
@@ -225,27 +229,25 @@ public class ComputerPlayer extends Player {
                     break;
             }
 
-            if (curDepth > 1) {
-                Log.i(TAG, String.format("Predicted best move: %s, found %s at depth %d",
-                        candidates.peek(), results.peek(), curDepth));
-                Log.i(TAG, String.format("Predicted best move at position %d of %d",
-                        new Callable<Integer>() {
-                            @Override
-                            public Integer call() {
-                                int ordinal = 1;
-                                Position target = candidates.peek().getBestPosition();
-                                for (MiniMaxResult res : results) {
-                                    if (res.getBestPosition().equals(target)) {
-                                        return ordinal;
-                                    }
-                                    ++ordinal;
+            Log.i(TAG, String.format("Predicted best move: %s, found %s at depth %d",
+                    candidates.peek(), results.peek(), curDepth));
+            Log.i(TAG, String.format("Predicted best move at position %d of %d",
+                    new Callable<Integer>() {
+                        @Override
+                        public Integer call() {
+                            int ordinal = 1;
+                            Position target = candidates.peek().getBestPosition();
+                            for (MiniMaxResult res : results) {
+                                if (res.getBestPosition().equals(target)) {
+                                    return ordinal;
                                 }
-
-                                return -1;
+                                ++ordinal;
                             }
-                        }.call(),
-                        results.size()));
-            }
+
+                            return -1;
+                        }
+                    }.call(),
+                    results.size()));
 
             candidates.clear();
             candidates.addAll(results);

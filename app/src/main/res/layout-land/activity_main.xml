@@ -42,6 +42,13 @@
                     android:text="@string/newgame"/>
 
             <Button
+                    android:id="@+id/hint"
+                    android:layout_width="@dimen/main_activity_button_width"
+                    android:layout_height="@dimen/main_activity_button_height"
+                    android:enabled="true"
+                    android:text="@string/hint"/>
+
+            <Button
                     android:id="@+id/undo"
                     android:layout_width="@dimen/main_activity_button_width"
                     android:layout_height="@dimen/main_activity_button_height"

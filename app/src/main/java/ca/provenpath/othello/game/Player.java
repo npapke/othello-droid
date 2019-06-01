@@ -37,7 +37,7 @@ public abstract class Player {
         protected transient volatile FluxSink<Integer> moveSink;
     }
 
-    private Holder holder = new Holder();
+    private transient Holder holder = new Holder();
     protected transient volatile boolean isInterrupted = false;
 
 
@@ -68,7 +68,10 @@ public abstract class Player {
     }
 
     protected void endUserMoves() {
-        holder.moveSink.complete();
+        if (holder.moveSink != null) {
+            // FIXME race
+            holder.moveSink.complete();
+        }
     }
 
     /**
@@ -96,6 +99,14 @@ public abstract class Player {
             return true;
         }
         return false;
+    }
+
+    public void hint() {
+        Log.d(TAG, color + " hint requested" );
+
+        if (holder.moveSink != null) {
+            holder.moveSink.next(-1);
+        }
     }
 
     //

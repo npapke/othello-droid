@@ -209,6 +209,10 @@ public class Board implements Cloneable, Iterable<Position> {
      * @return true if the move is valid, false otherwise
      */
     public boolean isValidMove(BoardValue player, int position) {
+        if (position < 0 || position >= BOARD_LSIZE) {
+            return false;
+        }
+
         BoardValue cell = getLvalue(position);
         switch (cell) {
             case BLACK:

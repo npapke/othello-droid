@@ -25,6 +25,7 @@ import ca.provenpath.othello.game.observer.MoveNotification;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -49,12 +50,26 @@ public class HumanPlayer extends Player {
                 .flatMap(move -> {
                             if (board.isValidMove(getColor(), move)) {
                                 endUserMoves();
-                                return Flux.just(new Move(getColor(), new Position(move)));
+                                return Flux.just(
+                                        new MoveNotification(
+                                                new Move(getColor(), new Position(move)), Instant.now()));
+                            } else if (move < 0) {
+                                // A hint is requested
+                                ComputerPlayer computerPlayer = new ComputerPlayer(color);
+                                computerPlayer.setDelayInitialNotification(Duration.ZERO);
+                                computerPlayer.setShowOverlay(true);
+                                computerPlayer.setMinTurnTime(Duration.ZERO);
+                                computerPlayer.setMaxDepth(1);
+                                computerPlayer.setStrategy(new AdaptiveStrategy());
+
+                                return computerPlayer
+                                        .makeMove(board)
+                                        .filter(notification -> !(notification instanceof MoveNotification));
+                            } else {
+                                return Flux.empty();
                             }
-                            return Flux.empty();
                         }
-                )
-                .<GameNotification>map(move -> new MoveNotification(move, Instant.now()));
+                );
     }
 
 }

@@ -1,60 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    >
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+>
 
     <android.support.v7.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.ActionBar"/>
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:elevation="4dp"
+            android:theme="@style/ThemeOverlay.AppCompat.ActionBar"/>
 
     <fragment
-        android:id="@+id/status_fragment"
-        android:name="ca.provenpath.othello.GameStatusFragment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+            android:id="@+id/status_fragment"
+            android:name="ca.provenpath.othello.GameStatusFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
     <ca.provenpath.othello.SquareGridView
-        android:id="@+id/gridview"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:horizontalSpacing="0dp"
-        android:verticalSpacing="0dp"
-        android:numColumns="8"
-        android:stretchMode="columnWidth"
-        />
+            android:id="@+id/gridview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:horizontalSpacing="0dp"
+            android:verticalSpacing="0dp"
+            android:numColumns="8"
+            android:stretchMode="columnWidth"
+    />
 
-    <RelativeLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/newgame"
-            android:layout_width="@dimen/main_activity_button_width"
-            android:layout_height="@dimen/main_activity_button_height"
-            android:layout_alignParentStart="true"
-            android:layout_gravity="left"
-            android:enabled="true"
-            android:text="@string/newgame"/>
+    <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
         <Button
-            android:id="@+id/undo"
-            android:layout_width="@dimen/main_activity_button_width"
-            android:layout_height="@dimen/main_activity_button_height"
-            android:layout_alignParentEnd="true"
-            android:layout_gravity="right"
-            android:enabled="true"
-            android:text="@string/undo"/>
+                android:id="@+id/newgame"
+                android:layout_width="@dimen/main_activity_button_width"
+                android:layout_height="@dimen/main_activity_button_height"
+                android:enabled="true"
+                android:layout_weight="1"
+                android:text="@string/newgame"/>
 
-    </RelativeLayout>
+        <Button
+                android:id="@+id/hint"
+                android:layout_width="@dimen/main_activity_button_width"
+                android:layout_height="@dimen/main_activity_button_height"
+                android:enabled="true"
+                android:layout_weight="1"
+                android:text="@string/hint"/>
+
+        <Button
+                android:id="@+id/undo"
+                android:layout_width="@dimen/main_activity_button_width"
+                android:layout_height="@dimen/main_activity_button_height"
+                android:enabled="true"
+                android:layout_weight="1"
+                android:text="@string/undo"/>
+
+    </LinearLayout>
 
     <fragment
             android:id="@+id/statistics_fragment"

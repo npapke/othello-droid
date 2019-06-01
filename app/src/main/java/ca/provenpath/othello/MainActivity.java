@@ -86,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         findViewById(R.id.undo).setOnClickListener(v -> undoGame());
+        findViewById(R.id.hint).setOnClickListener(v -> hint());
         findViewById(R.id.newgame).setOnClickListener(v -> runGame(Optional.empty()));
 
         getSupportFragmentManager().findFragmentById(R.id.statistics_fragment);
@@ -279,6 +280,16 @@ public class MainActivity extends AppCompatActivity {
                                 Context.MODE_PRIVATE),
                         tracker);
         return tracker;
+    }
+
+    private void hint() {
+        Log.d(TAG, "Requesting hint");
+        Optional<GameExecutor.Tracker> oTracker = GameExecutor.instance().getGameState();
+        if (oTracker.isPresent()) {
+            Arrays.stream(oTracker.get().getPlayer())
+                    .forEach(player -> player.hint());
+        }
+
     }
 
     /**
