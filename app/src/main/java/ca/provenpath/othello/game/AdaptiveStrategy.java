@@ -39,6 +39,7 @@ public class AdaptiveStrategy extends Strategy {
         int freedom = 0;
         int threats = 0;
         int numMoves = 0;
+        int buffs = 0;
         int antiBuffs = 0;
 
         BoardValue otherPlayer = player.otherPlayer();
@@ -50,11 +51,13 @@ public class AdaptiveStrategy extends Strategy {
                 scoreMe++;
                 numMoves++;
                 protectedScore += calcProtectedScore(board.countProtected(lpos), lpos);
+                buffs += calcBuffs(board, lpos);
                 antiBuffs += calcAntiBuffs(board, lpos);
             } else if (curCell == otherPlayer) {
                 scoreOther++;
                 numMoves++;
                 protectedScore -= calcProtectedScore(board.countProtected(lpos), lpos);
+                buffs -= calcBuffs(board, lpos);
                 antiBuffs -= calcAntiBuffs(board, lpos);
             } else if (board.isValidMove(player, lpos)) {
                 freedom++;
@@ -91,11 +94,27 @@ public class AdaptiveStrategy extends Strategy {
          */
         int finalScore = (freedom * 0)
                 + (protectedScore * 1)
-                + (score * 1)
+                + (score * 3)
+                + (buffs * 1)
                 - (threats * 00)
                 - (antiBuffs * 1);
 
         return finalScore;
+    }
+
+    private int calcBuffs(Board board, int lpos) {
+        int[] buffs = {
+                10, 1, 1, 1, 1, 1, 1, 10,
+                1, 0, 0, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 0, 0, 1,
+                1, 0, 0, 0, 0, 0, 0, 1,
+                10, 1, 1, 1, 1, 1, 1, 10
+        };
+
+        return buffs[lpos];
     }
 
     private int calcAntiBuffs(Board board, int lpos) {
