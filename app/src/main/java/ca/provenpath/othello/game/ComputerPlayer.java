@@ -63,6 +63,7 @@ public class ComputerPlayer extends Player {
     boolean showOverlay = false;
     Duration minTurnTime = Duration.ZERO;
     Duration delayInitialNotification = Duration.of(1, SECONDS);
+    transient TranspositionTable transpositionTable;
 
 
     public ComputerPlayer(BoardValue color) {
@@ -134,6 +135,7 @@ public class ComputerPlayer extends Player {
                             stats.getBoardsEvaluated(),
                             duration,
                             duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999));
+                    Log.i(TAG, String.format("%d cache hits", stats.getCacheHits()));
 
                     sink.next(new MoveNotification(new Move(color, result.getBestPosition()), startProcessing));
                     sink.complete();
@@ -210,6 +212,7 @@ public class ComputerPlayer extends Player {
             int beta = Integer.MAX_VALUE;
 
             results.clear();
+            transpositionTable = new TranspositionTable();
 
             for (MiniMaxResult candidate : candidates) {
                 Board copyOfBoard = (Board) board.clone();
@@ -315,6 +318,29 @@ public class ComputerPlayer extends Player {
             int alpha,
             int beta,
             Stats stats) {
+        int origAlpha = alpha;
+        int origBeta = beta;
+
+        TranspositionTable.Entry ttEntry = transpositionTable.get(board);
+        if (ttEntry != null) {
+            switch (ttEntry.getFlag()) {
+                case EXACT:
+                    stats.incCacheHit();
+                    return ttEntry.getValue();
+                case LOWERBOUND:
+                    alpha = Math.max(alpha, ttEntry.getValue());
+                    break;
+                case UPPERBOUND:
+                    beta = Math.min(beta, ttEntry.getValue());
+                    break;
+            }
+            if (beta <= alpha) {
+                //Log.d(TAG, "Cache prune");
+                stats.incCacheHit();
+                return ttEntry.getValue();
+            }
+        }
+
         if (depth <= 0 || isInterrupted) {
             stats.incBoard();
             return strategy.determineBoardValue(color, board);
@@ -373,6 +399,16 @@ public class ComputerPlayer extends Player {
                 value = strategy.determineFinalScore(color, board);
             }
         }
+
+        TranspositionTable.Flag flag;
+        if (value <= origAlpha) {
+            flag = TranspositionTable.Flag.UPPERBOUND;
+        } else if (value >= origBeta) {
+            flag = TranspositionTable.Flag.LOWERBOUND;
+        } else {
+            flag = TranspositionTable.Flag.EXACT;
+        }
+        transpositionTable.put(new TranspositionTable.Entry(value, depth, flag, board));
 
         return value;
     }
@@ -436,13 +472,22 @@ public class ComputerPlayer extends Player {
     private class Stats {
         private long start = System.currentTimeMillis();
         private int boardsEvaluated = 0;
+        private int cacheHits = 0;
 
         public void incBoard() {
             boardsEvaluated++;
         }
 
+        public void incCacheHit() {
+            cacheHits++;
+        }
+
         public int getBoardsEvaluated() {
             return boardsEvaluated;
+        }
+
+        public int getCacheHits() {
+            return cacheHits;
         }
 
         public long duration() {
