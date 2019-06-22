@@ -133,4 +133,36 @@ public class AdaptiveStrategyTest {
 
         assertTrue(value1 < value2);
     }
+
+    @Test
+    public void determineBoardValue05() {
+        String state = "" +
+                "........" +
+                "........" +
+                ".bbbww.b" +
+                "...bbwb." +
+                "...wbwww" +
+                "..wbbb.." +
+                "..b....." +
+                "........";
+        Board board1 = new Board(state);
+
+        state = "" +
+                "........" +
+                "........" +
+                ".bbb.w.b" +
+                "...bbbb." +
+                "...wbwww" +
+                "..wbbb.." +
+                "..w....." +
+                "..w.....";
+        Board board2 = new Board(state);
+
+        AdaptiveStrategy strategy = new AdaptiveStrategy();
+
+        int value1 = strategy.determineBoardValue(BoardValue.WHITE, board1);
+        int value2 = strategy.determineBoardValue(BoardValue.WHITE, board2);
+
+        assertTrue(value1 < value2);
+    }
 }

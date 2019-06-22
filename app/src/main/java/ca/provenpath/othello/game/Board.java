@@ -346,7 +346,7 @@ public class Board implements Cloneable, Iterable<Position> {
                 ++score;
             } else if ((other.equals(left) || other.equals(right)) && (!left.isPlayer() || !right.isPlayer())) {
                 // Penalize if trivially flippable
-                return 0;
+//                return 0;
             } else if (!left.isPlayer() || !right.isPlayer()) {
                 // An empty cell makes this vulnerable.  Penalize.
                 --score;

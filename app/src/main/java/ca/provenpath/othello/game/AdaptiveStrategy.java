@@ -72,8 +72,8 @@ public class AdaptiveStrategy extends Strategy {
         }
 
 
-        freedom = scale(freedom, 0, 16);  // a large max is not realistic
-        threats = scale(threats, 0, 16);  // a large max is not realistic
+        freedom = scale(freedom, 0, 16) / 10;  // a large max is not realistic
+        threats = scale(threats, 0, 16) / 10;  // a large max is not realistic
 
         int score = scoreMe;//- scoreOther;
 
@@ -81,25 +81,25 @@ public class AdaptiveStrategy extends Strategy {
          * The following is conjecture
          */
         int finalScore = (freedom * 1)
-                + (protectedScore * 1)
-                + (score * 10)
-                + (buffs * 3)
+                + (protectedScore * 2)
+                + (score * 20)
+                + (buffs * 10)
                 - (threats * 01)
-                - (antiBuffs * 1);
+                - (antiBuffs * 4);
 
         return finalScore;
     }
 
     private int calcBuffs(Board board, int lpos) {
         int[] buffs = {
-                10, 1, 1, 1, 1, 1, 1, 10,
+                10, 1, 2, 2, 2, 2, 1, 10,
                 1, 0, 0, 0, 0, 0, 0, 1,
+                2, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 2,
+                2, 0, 0, 0, 0, 0, 0, 2,
                 1, 0, 0, 0, 0, 0, 0, 1,
-                1, 0, 0, 0, 0, 0, 0, 1,
-                1, 0, 0, 0, 0, 0, 0, 1,
-                1, 0, 0, 0, 0, 0, 0, 1,
-                1, 0, 0, 0, 0, 0, 0, 1,
-                10, 1, 1, 1, 1, 1, 1, 10
+                10, 1, 2, 2, 2, 2, 1, 10
         };
 
         return buffs[lpos];
