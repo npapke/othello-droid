@@ -1,11 +1,19 @@
 plugins {
     id "io.spring.dependency-management" version "1.0.6.RELEASE"
+    id 'idea'
+    id 'com.android.application'
 }
 
-apply plugin: 'com.android.application'
+//apply plugin: 'com.android.application'
 // For Firebase crashlytics
 //apply plugin: 'io.fabric'
 
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
 
 android {
     compileSdkVersion 26
@@ -47,8 +55,8 @@ dependencies {
     implementation 'io.projectreactor:reactor-core'
     implementation 'com.android.support:support-v4:26.1.0'
     testImplementation 'junit:junit:4.12'
-    implementation  "android.arch.persistence.room:runtime:1.0.0"
-    annotationProcessor  "android.arch.persistence.room:compiler:1.0.0"
+    implementation  "android.arch.persistence.room:runtime:1.1.1"
+    annotationProcessor  "android.arch.persistence.room:compiler:1.1.1"
     // Need both of the below.  One to compile, the other for the ide.  The compile one generates warnings.
     compileOnly 'org.projectlombok:lombok:1.18.6'
     annotationProcessor 'org.projectlombok:lombok:1.18.6'

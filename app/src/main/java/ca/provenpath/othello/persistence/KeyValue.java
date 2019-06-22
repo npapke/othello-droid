@@ -1,6 +1,7 @@
 package ca.provenpath.othello.persistence;
 
 import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.PrimaryKey;
 import android.support.annotation.NonNull;
 
@@ -18,6 +19,7 @@ public class KeyValue {
     public KeyValue() {
     }
 
+    @Ignore
     public KeyValue(String key, String value) {
         this.key = key;
         this.value = value;
