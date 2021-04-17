@@ -11,4 +11,5 @@ public class EngineNotification extends GameNotification {
 
     int boardsEvaluated;
     long elapsedMs;
+    int depth;
 }

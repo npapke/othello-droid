@@ -28,6 +28,7 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import ca.provenpath.othello.game.Board;
 import ca.provenpath.othello.game.BoardValue;
+import ca.provenpath.othello.game.observer.AnalysisBoardNotification;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
 import reactor.util.function.Tuples;
 
@@ -113,8 +114,15 @@ public class BoardAdapter extends BaseAdapter {
 
         int linear = notification.getPosition().getLinear();
 
-        if( boardCellViews[linear] != null) {
-            boardCellViews[linear].drawText(notification);
+        if (notification instanceof AnalysisBoardNotification) {
+            Board board = ((AnalysisBoardNotification) notification).getBoard();
+            if (board != null) {
+                redraw(board, BoardValue.BEST_MOVE);
+            }
+        } else {
+            if (boardCellViews[linear] != null) {
+                boardCellViews[linear].drawText(notification);
+            }
         }
     }
 

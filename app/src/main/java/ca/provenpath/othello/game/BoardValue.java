@@ -30,7 +30,8 @@ public enum BoardValue {
     BLACK,
     VALID_WHITE,
     VALID_BLACK,
-    VALID_BOTH;
+    VALID_BOTH,
+    BEST_MOVE;
 
 
     /**
@@ -146,6 +147,9 @@ public enum BoardValue {
 
             case VALID_BOTH:
                 return tidy ? "." : "*";
+
+            case BEST_MOVE:
+                return tidy ? "." : "!";
 
             default:
                 throw new IllegalStateException("Unexpected value " + this.name());

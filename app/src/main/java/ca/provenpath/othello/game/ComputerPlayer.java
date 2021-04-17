@@ -24,7 +24,9 @@ import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import ca.provenpath.othello.PlayerSettingsFragment;
+import ca.provenpath.othello.game.observer.AnalysisBoardNotification;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
+import ca.provenpath.othello.game.observer.AnalysisValueNotification;
 import ca.provenpath.othello.game.observer.EngineNotification;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
@@ -37,8 +39,6 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -65,6 +65,7 @@ public class ComputerPlayer extends Player {
     boolean showOverlay = false;
     Duration minTurnTime = Duration.ZERO;
     Duration delayInitialNotification = Duration.of(1, SECONDS);
+    transient MiniMaxResult previousBestResult = null;
     transient TranspositionTable transpositionTable;
     static transient Timer timer = new Timer("PlayerTimer");
 
@@ -137,9 +138,11 @@ public class ComputerPlayer extends Player {
                                 sink.next(notification);
                             });
 
-                    Assert.notNull(result.getBestPosition());
+                    timerTask.cancel();
 
-                    Log.i(TAG, "makeMove: " + result.getBestPosition() + ", value: " + result.getValue());
+                    Assert.notNull(result.getPosition());
+
+                    Log.i(TAG, "makeMove: " + result.getPosition() + ", value: " + result.getValue());
                     long duration = stats.duration();
                     Log.i(TAG, String.format("%d boards evaluated in %d ms. %d boards/sec",
                             stats.getBoardsEvaluated(),
@@ -147,13 +150,13 @@ public class ComputerPlayer extends Player {
                             duration > 0 ? (int) ((double) stats.getBoardsEvaluated() * 1000.0 / (double) duration) : 999999));
                     Log.i(TAG, String.format("%d cache hits", stats.getCacheHits()));
 
-                    sink.next(new MoveNotification(new Move(color, result.getBestPosition()), startProcessing));
+                    sink.next(new MoveNotification(new Move(color, result.getPosition()), startProcessing));
                     sink.complete();
 
                 })
                 .subscribeOn(Schedulers.newElastic("engine"), false)
                 .publishOn(Schedulers.newElastic("delivery"))
-                .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisNotification))
+                .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisValueNotification))
                 .delaySubscription(getDelayInitialNotification())
                 .flatMapSequential(notification -> {
 
@@ -207,7 +210,7 @@ public class ComputerPlayer extends Player {
         }
 
         notificationSinkFn.accept(
-                new EngineNotification(stats.boardsEvaluated, stats.duration()));
+                new EngineNotification(stats.boardsEvaluated, stats.duration(), 0));
 
         /*
          * Build game tree of increasing depths.  Use results of one iteration to
@@ -215,8 +218,8 @@ public class ComputerPlayer extends Player {
          * benefits greatly from discovering the best solution early.
          */
 
-        try {
-            for (int curDepth = 1; curDepth <= depth; curDepth++) {
+        for (int curDepth = 1; curDepth <= depth && !isInterrupted; curDepth++) {
+            try {
                 // Always the maximizing player
                 int alpha = Integer.MIN_VALUE;
                 int beta = Integer.MAX_VALUE;
@@ -226,30 +229,25 @@ public class ComputerPlayer extends Player {
 
                 for (MiniMaxResult candidate : candidates) {
                     Board copyOfBoard = (Board) board.clone();
-                    copyOfBoard.makeMove(player, candidate.getBestPosition().getLinear());
+                    copyOfBoard.makeMove(player, candidate.getPosition().getLinear());
+
+                    MiniMaxResult result = new MiniMaxResult(
+                            (candidates.size() == 1)
+                                    ? 0  // Optimization.  There is only one move.
+                                    : minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats),
+                            candidate.getPosition());
+
+                    results.add(result);
+
+                    sendAnalysis(notificationSinkFn, result, results.peek());
 
                     notificationSinkFn.accept(
-                            new AnalysisNotification(0, candidate.getBestPosition(), false));
+                            new EngineNotification(stats.boardsEvaluated, stats.duration(), curDepth));
 
-                    int result = (candidates.size() == 1)
-                            ? 0  // Optimization.  There is only one move.
-                            : minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
-
-                    results.add(new MiniMaxResult(result, candidate.getBestPosition()));
-
-                    results.stream().forEach(r ->
-                            notificationSinkFn.accept(
-                                    new AnalysisNotification(r.getValue(), r.getBestPosition(),
-                                            r.getValue() == results.peek().getValue())));
-
-                    notificationSinkFn.accept(
-                            new EngineNotification(stats.boardsEvaluated, stats.duration()));
-
-                    alpha = Math.max(result, alpha);
-
-                    if (isInterrupted)
-                        break;
+                    alpha = Math.max(result.getValue(), alpha);
                 }
+
+                sendBestMove(notificationSinkFn, board, results.peek());
 
                 Log.i(TAG, String.format("Predicted best move: %s, found %s at depth %d",
                         candidates.peek(), results.peek(), curDepth));
@@ -258,9 +256,9 @@ public class ComputerPlayer extends Player {
                             @Override
                             public Integer call() {
                                 int ordinal = 1;
-                                Position target = candidates.peek().getBestPosition();
+                                Position target = candidates.peek().getPosition();
                                 for (MiniMaxResult res : results) {
-                                    if (res.getBestPosition().equals(target)) {
+                                    if (res.getPosition().equals(target)) {
                                         return ordinal;
                                     }
                                     ++ordinal;
@@ -271,18 +269,51 @@ public class ComputerPlayer extends Player {
                         }.call(),
                         results.size()));
 
+                if (results.size() <= 1)
+                    break;
+
                 candidates.clear();
                 candidates.addAll(results);
+            } catch (InterruptedException e) {
+                Log.w(TAG, e.getMessage());
+                return bestResultOf(candidates);
             }
-        } catch (Exception e) {
-            Log.w(TAG, e.getMessage());
-            return bestResultOf(candidates);
         }
 
         // We should be assured at least one valid move
         Assert.isTrue(!results.isEmpty());
 
         return bestResultOf(results);
+    }
+
+    private void sendBestMove(Consumer<GameNotification> notificationSinkFn, Board board, MiniMaxResult best) {
+
+        Board newBoard = (Board) board.clone();
+        newBoard.setBoardValue(best.getPosition(), BoardValue.BEST_MOVE);
+
+        notificationSinkFn.accept(
+                new AnalysisBoardNotification(best.getValue(), best.getPosition(), true, newBoard));
+    }
+
+    private void sendAnalysis(
+            Consumer<GameNotification> notificationSinkFn,
+            MiniMaxResult lastResult,
+            MiniMaxResult bestResult) {
+
+        if (previousBestResult != null && previousBestResult.getPosition() != bestResult.getPosition()) {
+            notificationSinkFn.accept(
+                    new AnalysisValueNotification(previousBestResult.getValue(), previousBestResult.getPosition(), false));
+        }
+
+        if (bestResult.getPosition() != lastResult.getPosition()) {
+            notificationSinkFn.accept(
+                    new AnalysisValueNotification(lastResult.getValue(), lastResult.getPosition(), false));
+        }
+
+        notificationSinkFn.accept(
+                new AnalysisValueNotification(bestResult.getValue(), bestResult.getPosition(), true));
+        previousBestResult = bestResult;
+
     }
 
     /**
@@ -331,12 +362,12 @@ public class ComputerPlayer extends Player {
             int depth,
             int alpha,
             int beta,
-            Stats stats) {
+            Stats stats) throws InterruptedException {
         int origAlpha = alpha;
         int origBeta = beta;
 
         if (isInterrupted) {
-            throw new RuntimeException("out of time");
+            throw new InterruptedException("out of time");
         }
 
         TranspositionTable.Entry ttEntry = transpositionTable.get(board);
@@ -437,7 +468,7 @@ public class ComputerPlayer extends Player {
     private class MiniMaxResult implements Comparable<MiniMaxResult> {
 
         private int value;
-        private Position bestPosition;
+        private Position position;
 
         /**
          * Compares this object to the specified object to determine their relative

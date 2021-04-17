@@ -38,6 +38,7 @@ import ca.provenpath.othello.game.GameExecutor;
 import ca.provenpath.othello.game.GameExecutorSerializer;
 import ca.provenpath.othello.game.Player;
 import ca.provenpath.othello.game.observer.AnalysisNotification;
+import ca.provenpath.othello.game.observer.AnalysisValueNotification;
 import ca.provenpath.othello.game.observer.EngineNotification;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
@@ -102,7 +103,9 @@ public class MainActivity extends AppCompatActivity {
                         switch (msg.what) {
                             case MSG_NOTIFICATION: {
                                 GameExecutor.Tracker tracker = (GameExecutor.Tracker) msg.obj;
-                                updateDisplay(tracker);
+                                if (tracker != null) {
+                                    updateDisplay(tracker);
+                                }
                                 break;
                             }
 
@@ -285,11 +288,9 @@ public class MainActivity extends AppCompatActivity {
     private void hint() {
         Log.d(TAG, "Requesting hint");
         Optional<GameExecutor.Tracker> oTracker = GameExecutor.instance().getGameState();
-        if (oTracker.isPresent()) {
-            Arrays.stream(oTracker.get().getPlayer())
-                    .forEach(player -> player.hint());
+        if (oTracker.isPresent() && oTracker.get().getNextPlayer() != null) {
+            oTracker.get().getNextPlayer().hint();
         }
-
     }
 
     /**
@@ -328,11 +329,12 @@ public class MainActivity extends AppCompatActivity {
             if (statisticsFragment != null) {
                 statisticsFragment.update(tracker);
             }
-
         }
 
         findViewById(R.id.undo).setEnabled(
                 GameExecutor.instance().peekUndoGameState().isPresent());
+        findViewById(R.id.hint).setEnabled(
+                tracker.getNextPlayer() != null && !tracker.getNextPlayer().isComputer());
     }
 
     private void showValidMoves(GameExecutor.Tracker tracker) {

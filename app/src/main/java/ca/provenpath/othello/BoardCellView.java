@@ -2,7 +2,11 @@ package ca.provenpath.othello;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.*;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -68,7 +72,10 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
 
     public void draw(BoardValue boardValue, BoardValue moveFilter) {
 
-        setForeground(null);
+        if (moveFilter != BoardValue.BEST_MOVE) {
+            setForeground(null);
+        }
+
         int resId = resourceForCell(boardValue, moveFilter);
         if (!lastResId.isPresent() || (lastResId.isPresent() && lastResId.get() != resId)) {
 
@@ -83,7 +90,7 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
                     case WHITE: {
                         // "Fade in" animation for changed tiles
                         boolean isLastMove = lastResId
-                                .map(id -> id == R.drawable.ic_cell_empty || id == R.drawable.ic_cell_valid)
+                                .map(id -> id == R.drawable.ic_cell_empty || id == R.drawable.ic_cell_valid || id == R.drawable.ic_cell_best)
                                 .orElse(false);
                         if (isLastMove) {
                             // user placed this piece
@@ -100,6 +107,10 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
 
                         break;
                     }
+
+                    case BEST_MOVE:
+                        // no animation
+                        break;
 
                     default: {
                         // valid moves
@@ -140,6 +151,8 @@ public class BoardCellView extends android.support.v7.widget.AppCompatImageView 
                 return R.drawable.ic_cell_white;
             case EMPTY:
                 return R.drawable.ic_cell_empty;
+            case BEST_MOVE:
+                return R.drawable.ic_cell_best;
 
             case VALID_BLACK:
             case VALID_WHITE:

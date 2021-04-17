@@ -72,12 +72,15 @@ public class StatisticsFragment extends Fragment {
 
             EngineNotification engine = (EngineNotification) tracker.getNotification();
 
+            progressText.append(String.format("Depth %d", engine.getDepth()));
+            progressText.append(" - ");
             progressText.append(
                     String.format(Locale.US, "%d boards in %d ms",
                             engine.getBoardsEvaluated(), engine.getElapsedMs()));
 
             if (engine.getElapsedMs() != 0) {
-                progressText.append(String.format(Locale.US, " - %.3f boards / sec",
+                progressText.append(" - ");
+                progressText.append(String.format(Locale.US, "%.0f boards / sec",
                         (double) engine.getBoardsEvaluated() / (double) engine.getElapsedMs() * 1000.0));
             }
         }
