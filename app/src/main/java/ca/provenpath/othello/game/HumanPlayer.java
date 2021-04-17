@@ -19,15 +19,12 @@
 
 package ca.provenpath.othello.game;
 
-import android.util.Log;
 import ca.provenpath.othello.game.observer.GameNotification;
 import ca.provenpath.othello.game.observer.MoveNotification;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 
 /**
  * Created by npapke on 2/25/15.
@@ -44,7 +41,7 @@ public class HumanPlayer extends Player {
     }
 
     @Override
-    public Flux<GameNotification> makeMove(Board board) {
+    public Flux<GameNotification> doMakeMove(Board board) {
 
         return userMoves()
                 .flatMap(move -> {
@@ -63,7 +60,7 @@ public class HumanPlayer extends Player {
                                 computerPlayer.setStrategy(new AdaptiveStrategy());
 
                                 return computerPlayer
-                                        .makeMove(board)
+                                        .doMakeMove(board)
                                         .filter(notification -> !(notification instanceof MoveNotification));
                             } else {
                                 return Flux.empty();

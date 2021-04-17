@@ -20,7 +20,6 @@
 package ca.provenpath.othello.game;
 
 import android.content.SharedPreferences;
-import android.graphics.Path;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
@@ -34,11 +33,9 @@ import lombok.Getter;
 import lombok.Setter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Function;

@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                 .map(tracker -> {
                     String serial = GameExecutorSerializer.serialize(tracker);
                     bundle.putString(KEY_EXECUTOR, serial);
-                    return serial;
+                    return null;
                 });
 
     }

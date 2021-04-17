@@ -80,7 +80,13 @@ public abstract class Player {
      *
      * @param board the game board to make the move on
      */
-    public abstract Flux<GameNotification> makeMove(Board board);
+    public Flux<GameNotification> makeMove(Board board)
+    {
+        isInterrupted = false;
+        return doMakeMove(board);
+    }
+
+    protected abstract Flux<GameNotification> doMakeMove(Board board);
 
     public void interruptMove() {
         Log.i(TAG, color + " interruptMove");

@@ -40,6 +40,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
@@ -64,6 +66,7 @@ public class ComputerPlayer extends Player {
     Duration minTurnTime = Duration.ZERO;
     Duration delayInitialNotification = Duration.of(1, SECONDS);
     transient TranspositionTable transpositionTable;
+    static transient Timer timer = new Timer("PlayerTimer");
 
 
     public ComputerPlayer(BoardValue color) {
@@ -102,7 +105,7 @@ public class ComputerPlayer extends Player {
      * @return
      */
     @Override
-    public Flux<GameNotification> makeMove(Board board) {
+    protected Flux<GameNotification> doMakeMove(Board board) {
 
         Log.i(TAG, "makeMove");
 
@@ -116,9 +119,16 @@ public class ComputerPlayer extends Player {
                     Assert.isTrue(maxDepth > 0);
                     Assert.isTrue(board.hasValidMove(color));
 
-                    isInterrupted = false;
-
                     Instant startProcessing = Instant.now();
+
+                    TimerTask timerTask = new TimerTask() {
+                        @Override
+                        public void run() {
+                            isInterrupted = true;
+                        }
+                    };
+
+                    timer.schedule(timerTask, 3000);
 
                     Stats stats = new Stats();
                     MiniMaxResult result = minimaxAB(board, color, maxDepth, stats,
@@ -141,8 +151,8 @@ public class ComputerPlayer extends Player {
                     sink.complete();
 
                 })
-                .subscribeOn(Schedulers.newSingle("engine"), false)
-                .publishOn(Schedulers.newSingle("delivery"))
+                .subscribeOn(Schedulers.newElastic("engine"), false)
+                .publishOn(Schedulers.newElastic("delivery"))
                 .filter(notification -> isShowOverlay() || !(notification instanceof AnalysisNotification))
                 .delaySubscription(getDelayInitialNotification())
                 .flatMapSequential(notification -> {
@@ -205,64 +215,68 @@ public class ComputerPlayer extends Player {
          * benefits greatly from discovering the best solution early.
          */
 
-        List<Integer> depths = depth > 3 ? Arrays.asList(1, 3, depth) : Arrays.asList(depth);
-        for (int curDepth : depths) {
-            // Always the maximizing player
-            int alpha = Integer.MIN_VALUE;
-            int beta = Integer.MAX_VALUE;
+        try {
+            for (int curDepth = 1; curDepth <= depth; curDepth++) {
+                // Always the maximizing player
+                int alpha = Integer.MIN_VALUE;
+                int beta = Integer.MAX_VALUE;
 
-            results.clear();
-            transpositionTable = new TranspositionTable();
+                results.clear();
+                transpositionTable = new TranspositionTable();
 
-            for (MiniMaxResult candidate : candidates) {
-                Board copyOfBoard = (Board) board.clone();
-                copyOfBoard.makeMove(player, candidate.getBestPosition().getLinear());
+                for (MiniMaxResult candidate : candidates) {
+                    Board copyOfBoard = (Board) board.clone();
+                    copyOfBoard.makeMove(player, candidate.getBestPosition().getLinear());
 
-                notificationSinkFn.accept(
-                        new AnalysisNotification(0, candidate.getBestPosition(), false));
+                    notificationSinkFn.accept(
+                            new AnalysisNotification(0, candidate.getBestPosition(), false));
 
-                int result = (candidates.size() == 1)
-                        ? 0  // Optimization.  There is only one move.
-                        : minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
+                    int result = (candidates.size() == 1)
+                            ? 0  // Optimization.  There is only one move.
+                            : minimaxAB(copyOfBoard, player.otherPlayer(), curDepth - 1, alpha, beta, stats);
 
-                results.add(new MiniMaxResult(result, candidate.getBestPosition()));
+                    results.add(new MiniMaxResult(result, candidate.getBestPosition()));
 
-                results.stream().forEach(r ->
-                        notificationSinkFn.accept(
-                                new AnalysisNotification(r.getValue(), r.getBestPosition(),
-                                        r.getValue() == results.peek().getValue())));
+                    results.stream().forEach(r ->
+                            notificationSinkFn.accept(
+                                    new AnalysisNotification(r.getValue(), r.getBestPosition(),
+                                            r.getValue() == results.peek().getValue())));
 
-                notificationSinkFn.accept(
-                        new EngineNotification(stats.boardsEvaluated, stats.duration()));
+                    notificationSinkFn.accept(
+                            new EngineNotification(stats.boardsEvaluated, stats.duration()));
 
-                alpha = Math.max(result, alpha);
+                    alpha = Math.max(result, alpha);
 
-                if (isInterrupted)
-                    break;
-            }
+                    if (isInterrupted)
+                        break;
+                }
 
-            Log.i(TAG, String.format("Predicted best move: %s, found %s at depth %d",
-                    candidates.peek(), results.peek(), curDepth));
-            Log.i(TAG, String.format("Predicted best move at position %d of %d",
-                    new Callable<Integer>() {
-                        @Override
-                        public Integer call() {
-                            int ordinal = 1;
-                            Position target = candidates.peek().getBestPosition();
-                            for (MiniMaxResult res : results) {
-                                if (res.getBestPosition().equals(target)) {
-                                    return ordinal;
+                Log.i(TAG, String.format("Predicted best move: %s, found %s at depth %d",
+                        candidates.peek(), results.peek(), curDepth));
+                Log.i(TAG, String.format("Predicted best move at position %d of %d",
+                        new Callable<Integer>() {
+                            @Override
+                            public Integer call() {
+                                int ordinal = 1;
+                                Position target = candidates.peek().getBestPosition();
+                                for (MiniMaxResult res : results) {
+                                    if (res.getBestPosition().equals(target)) {
+                                        return ordinal;
+                                    }
+                                    ++ordinal;
                                 }
-                                ++ordinal;
+
+                                return -1;
                             }
+                        }.call(),
+                        results.size()));
 
-                            return -1;
-                        }
-                    }.call(),
-                    results.size()));
-
-            candidates.clear();
-            candidates.addAll(results);
+                candidates.clear();
+                candidates.addAll(results);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, e.getMessage());
+            return bestResultOf(candidates);
         }
 
         // We should be assured at least one valid move
@@ -321,6 +335,10 @@ public class ComputerPlayer extends Player {
         int origAlpha = alpha;
         int origBeta = beta;
 
+        if (isInterrupted) {
+            throw new RuntimeException("out of time");
+        }
+
         TranspositionTable.Entry ttEntry = transpositionTable.get(board);
         if (ttEntry != null) {
             switch (ttEntry.getFlag()) {
@@ -341,7 +359,7 @@ public class ComputerPlayer extends Player {
             }
         }
 
-        if (depth <= 0 || isInterrupted) {
+        if (depth <= 0) {
             stats.incBoard();
             return strategy.determineBoardValue(color, board);
         }
