@@ -64,6 +64,7 @@ public class ComputerPlayer extends Player {
     Strategy strategy = new AdaptiveStrategy();
     boolean showOverlay = false;
     Duration minTurnTime = Duration.ZERO;
+    Duration maxTurnTime = Duration.ofMillis(3000);
     Duration delayInitialNotification = Duration.of(1, SECONDS);
     transient MiniMaxResult previousBestResult = null;
     transient TranspositionTable transpositionTable;
@@ -81,6 +82,9 @@ public class ComputerPlayer extends Player {
                 Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_LOOKAHEAD, "6")));
         setStrategy(StrategyFactory.getObject(prefs.getString(PlayerSettingsFragment.KEY_STRATEGY, "")));
 
+        setMaxTurnTime(Duration.of(
+                Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_MAX_TIME_MS, "5000")),
+                MILLIS));
         setMinTurnTime(Duration.of(
                 Integer.parseInt(prefs.getString(PlayerSettingsFragment.KEY_MIN_TIME_MS, "0")),
                 MILLIS));
@@ -129,7 +133,7 @@ public class ComputerPlayer extends Player {
                         }
                     };
 
-                    timer.schedule(timerTask, 3000);
+                    timer.schedule(timerTask, getMaxTurnTime().toMillis());
 
                     Stats stats = new Stats();
                     MiniMaxResult result = minimaxAB(board, color, maxDepth, stats,

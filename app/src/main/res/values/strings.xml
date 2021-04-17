@@ -28,7 +28,9 @@
     <string name="black">Black</string>
     <string name="pref_isoverlay_analysis_summ">Show analysis overlay</string>
     <string name="pref_isoverlay_analysis">Overlay</string>
+    <string name="pref_max_time">Turns take at most this long in seconds</string>
     <string name="pref_min_time">Turns take at least this long in seconds</string>
+    <string name="pref_max_time_default">5</string>
     <string name="pref_min_time_default">0</string>
     <string name="pref_delay_time">Delay initial notification in seconds</string>
     <string name="pref_delay_time_default">0</string>

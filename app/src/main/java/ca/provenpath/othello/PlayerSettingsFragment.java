@@ -37,6 +37,7 @@ public class PlayerSettingsFragment extends PreferenceFragment
     public final static String KEY_STRATEGY = "pref_strategy";
     public final static String KEY_LOOKAHEAD = "pref_lookahead";
     public final static String KEY_ISOVERLAY_ANALYSIS = "pref_isoverlay_analysis";
+    public final static String KEY_MAX_TIME_MS = "pref_max_time";
     public final static String KEY_MIN_TIME_MS = "pref_min_time";
     public final static String KEY_DELAY_TIME_MS = "pref_delay_time";
 
@@ -61,6 +62,7 @@ public class PlayerSettingsFragment extends PreferenceFragment
         onSharedPreferenceChanged(prefs, KEY_STRATEGY);
         onSharedPreferenceChanged(prefs, KEY_LOOKAHEAD);
         onSharedPreferenceChanged(prefs, KEY_DELAY_TIME_MS);
+        onSharedPreferenceChanged(prefs, KEY_MAX_TIME_MS);
         onSharedPreferenceChanged(prefs, KEY_MIN_TIME_MS);
 
         prefs.registerOnSharedPreferenceChangeListener(this);
